@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\EntityController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\ArticleController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -16,5 +18,7 @@ Route::get('dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::resource('entities', EntityController::class);
+Route::resource('contacts', ContactController::class);
+Route::resource('articles', ArticleController::class);
 
 require __DIR__.'/settings.php';

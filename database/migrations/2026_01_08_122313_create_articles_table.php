@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('articles', function (Blueprint $table) {
@@ -17,18 +14,14 @@ return new class extends Migration
             $table->string('name', 200);
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
-            $table->foreignId('vat_rate_id')->constrained('vat_rates');
+            $table->foreignId('vat_rate_id')->nullable()->constrained('vat_rates')->nullOnDelete(); // ← Adicionar nullable
             $table->string('photo', 255)->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('articles');

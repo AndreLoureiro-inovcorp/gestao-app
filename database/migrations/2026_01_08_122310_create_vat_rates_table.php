@@ -6,23 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('vat_rates', function (Blueprint $table) {
             $table->id();
+            $table->string('name', 100);
             $table->decimal('rate', 5, 2);
-            $table->string('description', 100);
+            $table->string('description', 100)->nullable();
             $table->boolean('is_default')->default(false);
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('vat_rates');
