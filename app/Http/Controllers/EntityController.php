@@ -9,9 +9,6 @@ use Inertia\Inertia;
 
 class EntityController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $type = $request->query('type');
@@ -32,14 +29,10 @@ class EntityController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'type' => 'required|array',
-            'type.*' => 'in:client,supplier',
+            'type' => 'required',
             'tax_number' => 'required|string|max:20|unique:entities,tax_number',
             'name' => 'required|string|max:200',
             'address' => 'nullable|string',
@@ -55,28 +48,23 @@ class EntityController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
+        $validated['number'] = Entity::max('number') + 1;
+
         Entity::create($validated);
 
         return redirect()->back()->with('success', 'Entidade criada com sucesso!');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Entity $entity)
     {
         return response()->json($entity->load('country'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Entity $entity)
     {
         $validated = $request->validate([
-            'type' => 'required|array',
-            'type.*' => 'in:client,supplier',
-            'tax_number' => 'required|string|max:20|unique:entities,tax_number,'.$entity->id,
+            'type' => 'required',
+            'tax_number' => 'required|string|max:20|unique:entities,tax_number,'.$entity->id, // ← SIMPLES!
             'name' => 'required|string|max:200',
             'address' => 'nullable|string',
             'postal_code' => ['nullable', 'regex:/^\d{4}-\d{3}$/'],
@@ -96,12 +84,9 @@ class EntityController extends Controller
         return redirect()->back()->with('success', 'Entidade atualizada com sucesso!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Entity $entity)
     {
-        $entity->delete();
+        $entity->delete(); // ← APAGA PERMANENTEMENTE!
 
         return redirect()->back()->with('success', 'Entidade eliminada com sucesso!');
     }

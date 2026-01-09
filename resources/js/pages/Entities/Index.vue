@@ -123,12 +123,12 @@ const pageTitle = computed(() => {
 /* -------------------------------------------------------------------------- */
 
 function submit() {
-  if (isEditing.value) {
-    form.put(route('entities.update', editingId.value), {
+  if (isEditing.value && editingId.value !== null) {
+    form.put(`/entities/${editingId.value}`, {
       onSuccess: clearForm,
     })
   } else {
-    form.post(route('entities.store'), {
+    form.post('/entities', {
       onSuccess: clearForm,
     })
   }
@@ -158,7 +158,9 @@ function edit(entity: Entity) {
 
 function destroy(entity: Entity) {
   if (confirm('Tem certeza que deseja eliminar esta entidade?')) {
-    router.delete(route('entities.destroy', entity.id))
+    router.delete(`/entities/${entity.id}`, {
+      preserveScroll: true,
+    })
   }
 }
 
@@ -181,7 +183,6 @@ function clearForm() {
     <div class="py-12">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-        <!-- FORMULÁRIO -->
         <Card>
           <CardHeader>
             <CardTitle>{{ isEditing ? 'Editar' : 'Nova' }} Entidade</CardTitle>
@@ -190,35 +191,18 @@ function clearForm() {
           <CardContent>
             <form @submit.prevent="submit" class="space-y-6">
 
-              <!-- TIPO -->
               <div class="space-y-2">
                 <Label>Tipo *</Label>
 
                 <div class="flex gap-6">
                   <div class="flex items-center gap-2">
-                    <Checkbox
-                      id="type-client"
-                      :checked="form.type.includes('client')"
-                      @update:checked="(checked: boolean) => {
-                        form.type = checked
-                          ? [...new Set([...form.type, 'client'])]
-                          : form.type.filter(t => t !== 'client')
-                      }"
-                    />
-                    <Label for="type-client">Cliente</Label>
+                    <input type="radio" id="type-client" value="client" v-model="form.type[0]" class="h-4 w-4" />
+                    <Label for="type-client" class="cursor-pointer">Cliente</Label>
                   </div>
 
                   <div class="flex items-center gap-2">
-                    <Checkbox
-                      id="type-supplier"
-                      :checked="form.type.includes('supplier')"
-                      @update:checked="(checked: boolean) => {
-                        form.type = checked
-                          ? [...new Set([...form.type, 'supplier'])]
-                          : form.type.filter(t => t !== 'supplier')
-                      }"
-                    />
-                    <Label for="type-supplier">Fornecedor</Label>
+                    <input type="radio" id="type-supplier" value="supplier" v-model="form.type[0]" class="h-4 w-4" />
+                    <Label for="type-supplier" class="cursor-pointer">Fornecedor</Label>
                   </div>
                 </div>
 
@@ -227,7 +211,6 @@ function clearForm() {
                 </p>
               </div>
 
-              <!-- NIF + NOME -->
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <Label for="tax_number">NIF *</Label>
@@ -246,13 +229,11 @@ function clearForm() {
                 </div>
               </div>
 
-              <!-- MORADA -->
               <div class="space-y-2">
                 <Label for="address">Morada</Label>
                 <Input id="address" v-model="form.address" />
               </div>
 
-              <!-- CP / LOCALIDADE / PAÍS -->
               <div class="grid grid-cols-3 gap-4">
                 <div class="space-y-2">
                   <Label for="postal_code">Código Postal</Label>
@@ -266,19 +247,13 @@ function clearForm() {
 
                 <div class="space-y-2">
                   <Label for="country_id">País</Label>
-                  <Select
-                    :model-value="form.country_id?.toString()"
-                    @update:model-value="value => form.country_id = value ? Number(value) : null"
-                  >
+                  <Select :model-value="form.country_id?.toString()"
+                    @update:model-value="value => form.country_id = value ? Number(value) : null">
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem
-                        v-for="country in countries"
-                        :key="country.id"
-                        :value="country.id.toString()"
-                      >
+                      <SelectItem v-for="country in countries" :key="country.id" :value="country.id.toString()">
                         {{ country.name }}
                       </SelectItem>
                     </SelectContent>
@@ -286,7 +261,6 @@ function clearForm() {
                 </div>
               </div>
 
-              <!-- CONTACTOS -->
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <Label for="phone">Telefone</Label>
@@ -309,23 +283,17 @@ function clearForm() {
                 </div>
               </div>
 
-              <!-- RGPD -->
               <div class="flex items-center gap-2">
-                <Checkbox
-                  id="gdpr_consent"
-                  :checked="form.gdpr_consent"
-                  @update:checked="(value: boolean) => form.gdpr_consent = value"
-                />
+                <Checkbox id="gdpr_consent" :checked="form.gdpr_consent"
+                  @update:checked="(value: boolean) => form.gdpr_consent = value" />
                 <Label for="gdpr_consent">Consentimento RGPD</Label>
               </div>
 
-              <!-- OBS -->
               <div class="space-y-2">
                 <Label for="notes">Observações</Label>
                 <Textarea id="notes" v-model="form.notes" />
               </div>
 
-              <!-- ESTADO -->
               <div class="space-y-2">
                 <Label>Estado *</Label>
                 <Select v-model="form.status">
@@ -337,7 +305,6 @@ function clearForm() {
                 </Select>
               </div>
 
-              <!-- AÇÕES -->
               <div class="flex gap-2">
                 <Button type="submit" :disabled="form.processing">
                   {{ isEditing ? 'Atualizar' : 'Guardar' }}
@@ -351,7 +318,6 @@ function clearForm() {
           </CardContent>
         </Card>
 
-        <!-- TABELA -->
         <Card>
           <CardHeader>
             <CardTitle>Lista de {{ pageTitle }}</CardTitle>
