@@ -145,7 +145,6 @@ function clearForm() {
         <div class="py-12">
             <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
 
-                <!-- FORMULÁRIO -->
                 <Card>
                     <CardHeader>
                         <CardTitle>{{ isEditing ? 'Editar' : 'Novo' }} Contacto</CardTitle>
@@ -154,7 +153,6 @@ function clearForm() {
                     <CardContent>
                         <form class="space-y-6" @submit.prevent="submit">
 
-                            <!-- Entidade -->
                             <div class="space-y-2">
                                 <Label for="entity_id">Entidade *</Label>
                                 <Select :model-value="form.entity_id?.toString()"
@@ -174,7 +172,6 @@ function clearForm() {
                                 </p>
                             </div>
 
-                            <!-- Nome e Apelido -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-2">
                                     <Label for="first_name">Nome *</Label>
@@ -193,7 +190,6 @@ function clearForm() {
                                 </div>
                             </div>
 
-                            <!-- Função -->
                             <div class="space-y-2">
                                 <Label for="contact_role_id">Função</Label>
                                 <Select :model-value="form.contact_role_id?.toString()"
@@ -210,7 +206,6 @@ function clearForm() {
                                 </Select>
                             </div>
 
-                            <!-- Telefone, Telemóvel, Email -->
                             <div class="grid grid-cols-3 gap-4">
                                 <div class="space-y-2">
                                     <Label for="phone">Telefone</Label>
@@ -228,20 +223,17 @@ function clearForm() {
                                 </div>
                             </div>
 
-                            <!-- RGPD -->
                             <div class="flex items-center gap-2">
                                 <Checkbox id="gdpr_consent" :checked="form.gdpr_consent"
                                     @update:checked="(value: boolean) => form.gdpr_consent = value" />
                                 <Label for="gdpr_consent">Consentimento RGPD</Label>
                             </div>
 
-                            <!-- Observações -->
                             <div class="space-y-2">
                                 <Label for="notes">Observações</Label>
                                 <Textarea id="notes" v-model="form.notes" />
                             </div>
 
-                            <!-- Estado -->
                             <div class="space-y-2">
                                 <Label>Estado *</Label>
                                 <Select v-model="form.status">
@@ -253,7 +245,6 @@ function clearForm() {
                                 </Select>
                             </div>
 
-                            <!-- Botões -->
                             <div class="flex gap-2">
                                 <Button type="submit" :disabled="form.processing">
                                     {{ isEditing ? 'Atualizar' : 'Guardar' }}
@@ -267,7 +258,6 @@ function clearForm() {
                     </CardContent>
                 </Card>
 
-                <!-- TABELA -->
                 <Card>
                     <CardHeader>
                         <CardTitle>Lista de Contactos</CardTitle>
