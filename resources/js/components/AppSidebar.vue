@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
-import NavMain from '@/components/NavMain.vue';
-import NavUser from '@/components/NavUser.vue';
+import NavFooter from '@/components/NavFooter.vue'
+import NavMain from '@/components/NavMain.vue'
+import NavUser from '@/components/NavUser.vue'
 import {
     Sidebar,
     SidebarContent,
@@ -10,12 +10,22 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
-import AppLogo from './AppLogo.vue';
+} from '@/components/ui/sidebar'
+import { dashboard } from '@/routes'
+import type { NavItem } from '@/types'
+import { Link } from '@inertiajs/vue3'
+import { 
+    BookOpen, 
+    Folder, 
+    LayoutGrid,
+    Users,
+    Building2,
+    Contact,
+    FileText,
+    ShoppingCart,
+    Settings,
+} from 'lucide-vue-next'
+import AppLogo from './AppLogo.vue'
 
 const mainNavItems: NavItem[] = [
     {
@@ -23,7 +33,59 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
-];
+    {
+        title: 'Clientes',
+        href: '/entities?type=client',
+        icon: Users,
+    },
+    {
+        title: 'Fornecedores',
+        href: '/entities?type=supplier',
+        icon: Building2,
+    },
+    {
+        title: 'Contactos',
+        href: '/contacts',
+        icon: Contact,
+    },
+    {
+        title: 'Propostas',
+        href: '/proposals',
+        icon: FileText,
+    },
+    {
+        title: 'Encomendas',
+        icon: ShoppingCart,
+        items: [
+            {
+                title: 'Clientes',
+                href: '/client-orders',
+            },
+            {
+                title: 'Fornecedores',
+                href: '/supplier-orders',
+            },
+        ],
+    },
+    {
+        title: 'Configurações',
+        icon: Settings,
+        items: [
+            {
+                title: 'Países',
+                href: '/countries',
+            },
+            {
+                title: 'Artigos',
+                href: '/articles',
+            },
+            {
+                title: 'Empresa',
+                href: '/settings/company',
+            },
+        ],
+    },
+]
 
 const footerNavItems: NavItem[] = [
     {
@@ -36,7 +98,7 @@ const footerNavItems: NavItem[] = [
         href: 'https://laravel.com/docs/starter-kits#vue',
         icon: BookOpen,
     },
-];
+]
 </script>
 
 <template>
@@ -62,5 +124,4 @@ const footerNavItems: NavItem[] = [
             <NavUser />
         </SidebarFooter>
     </Sidebar>
-    <slot />
 </template>

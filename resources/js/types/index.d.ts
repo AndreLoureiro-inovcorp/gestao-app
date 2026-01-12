@@ -10,12 +10,18 @@ export interface BreadcrumbItem {
     href: string;
 }
 
+import type { Component } from 'vue'
+import { InertiaLinkProps } from '@inertiajs/vue3'
+import type { LucideIcon } from 'lucide-vue-next'
+
 export interface NavItem {
-    title: string;
-    href: NonNullable<InertiaLinkProps['href']>;
-    icon?: LucideIcon;
-    isActive?: boolean;
+    title: string
+    href?: NonNullable<InertiaLinkProps['href']>
+    icon?: LucideIcon | Component
+    items?: NavItem[]
+    isActive?: boolean
 }
+
 
 export type AppPageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
