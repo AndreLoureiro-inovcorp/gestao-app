@@ -25,7 +25,7 @@ interface Country {
     code: string
 }
 
-const props = defineProps<{
+const { countries } = defineProps<{
     countries: Country[]
 }>()
 

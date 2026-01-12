@@ -54,7 +54,7 @@ interface ContactRole {
     name: string
 }
 
-const props = defineProps<{
+const { contacts, entities, contactRoles } = defineProps<{
     contacts: Contact[]
     entities: Entity[]
     contactRoles: ContactRole[]

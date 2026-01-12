@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useForm, router, usePage } from '@inertiajs/vue3'
+import { useForm, router } from '@inertiajs/vue3'
 
 import AppLayout from '@/layouts/AppLayout.vue'
 
@@ -55,7 +55,7 @@ interface Country {
   name: string
 }
 
-const props = defineProps<{
+const { entities, countries, filterType } = defineProps<{
   entities: Entity[]
   countries: Country[]
   filterType?: 'client' | 'supplier'
@@ -73,7 +73,7 @@ const editingId = ref<number | null>(null)
 /* -------------------------------------------------------------------------- */
 
 const form = useForm({
-  type: props.filterType ? [props.filterType] : ([] as string[]),
+  type: filterType ? [filterType] : ([] as string[]),
   tax_number: '',
   name: '',
   address: '',
@@ -90,33 +90,15 @@ const form = useForm({
 })
 
 /* -------------------------------------------------------------------------- */
-/* ROUTE HELPER */
-/* -------------------------------------------------------------------------- */
-
-const route = (name: string, ...params: unknown[]) => {
-  const page = usePage()
-  const routes = (page.props as any).ziggy?.routes || {}
-  const routePattern = routes[name]
-
-  if (!routePattern) return '#'
-
-  let url = routePattern.uri
-  params.forEach(param => {
-    url = url.replace(/\{[^}]+\}/, String(param))
-  })
-
-  return url
-}
-
-/* -------------------------------------------------------------------------- */
 /* COMPUTED */
 /* -------------------------------------------------------------------------- */
 
 const pageTitle = computed(() => {
-  if (props.filterType === 'client') return 'Clientes'
-  if (props.filterType === 'supplier') return 'Fornecedores'
+  if (filterType === 'client') return 'Clientes'
+  if (filterType === 'supplier') return 'Fornecedores'
   return 'Entidades'
 })
+
 
 /* -------------------------------------------------------------------------- */
 /* ACTIONS */
@@ -168,8 +150,9 @@ function clearForm() {
   isEditing.value = false
   editingId.value = null
   form.reset()
-  form.type = props.filterType ? [props.filterType] : []
+  form.type = filterType ? [filterType] : []
 }
+
 </script>
 
 <template>

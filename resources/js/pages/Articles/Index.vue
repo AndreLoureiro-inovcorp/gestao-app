@@ -46,7 +46,7 @@ interface VatRate {
     rate: number
 }
 
-const props = defineProps<{
+const { articles, vatRates } = defineProps<{
     articles: Article[]
     vatRates: VatRate[]
 }>()
