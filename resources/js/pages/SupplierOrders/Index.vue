@@ -16,12 +16,12 @@ import {
 /* TYPES */
 /* -------------------------------------------------------------------------- */
 
-interface Proposal {
+interface SupplierOrder {
     id: number
     number: string
-    proposal_date?: string
-    validity_date: string
-    client: { id: number; name: string }
+    order_date: string
+    supplier: { id: number; name: string }
+    client_order: { id: number; number: string }
     total_amount: number
     status: string
 }
@@ -30,44 +30,23 @@ interface Proposal {
 /* PROPS */
 /* -------------------------------------------------------------------------- */
 
-const { proposals } = defineProps<{
-    proposals: Proposal[]
+const { orders } = defineProps<{
+    orders: SupplierOrder[]
 }>()
 
 /* -------------------------------------------------------------------------- */
 /* ACTIONS */
 /* -------------------------------------------------------------------------- */
 
-function goToCreate() {
-    router.visit('/proposals/create')
-}
-
-function goToEdit(id: number) {
-    router.visit(`/proposals/${id}/edit`)
-}
-
-function destroy(proposal: Proposal) {
-    if (confirm(`Tem certeza que deseja eliminar a proposta ${proposal.number}?`)) {
-        router.delete(`/proposals/${proposal.id}`, {
+function destroy(order: SupplierOrder) {
+    if (confirm(`Tem certeza que deseja eliminar a encomenda ${order.number}?`)) {
+        router.delete(`/supplier-orders/${order.id}`, {
             preserveScroll: true,
         })
     }
 }
 
-function convertToOrder(proposalId: number) {
-    if (confirm('Converter esta proposta em encomenda?')) {
-        router.post(`/proposals/${proposalId}/convert-to-order`, {}, {
-            onSuccess: () => {
-                alert('Proposta convertida com sucesso!')
-                router.visit('/client-orders')
-            },
-            preserveScroll: true,
-        })
-    }
-}
-
-function formatDate(date: string | undefined) {
-    if (!date) return '-'
+function formatDate(date: string) {
     return new Date(date).toLocaleDateString('pt-PT')
 }
 
@@ -93,7 +72,7 @@ function getStatusLabel(status: string): string {
     <AppLayout>
         <template #header>
             <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Propostas
+                Encomendas - Fornecedores
             </h2>
         </template>
 
@@ -101,11 +80,11 @@ function getStatusLabel(status: string): string {
             <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
 
                 <Card>
-                    <CardHeader class="flex flex-row items-center justify-between">
-                        <CardTitle>Lista de Propostas</CardTitle>
-                        <Button @click="goToCreate">
-                            + Nova Proposta
-                        </Button>
+                    <CardHeader>
+                        <CardTitle>Lista de Encomendas de Fornecedores</CardTitle>
+                        <p class="text-sm text-muted-foreground mt-2">
+                            Estas encomendas são geradas automaticamente a partir de Encomendas de Cliente fechadas.
+                        </p>
                     </CardHeader>
 
                     <CardContent>
@@ -114,8 +93,8 @@ function getStatusLabel(status: string): string {
                                 <TableRow>
                                     <TableHead>Número</TableHead>
                                     <TableHead>Data</TableHead>
-                                    <TableHead>Validade</TableHead>
-                                    <TableHead>Cliente</TableHead>
+                                    <TableHead>Fornecedor</TableHead>
+                                    <TableHead>Encomenda Cliente</TableHead>
                                     <TableHead>Valor Total</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead class="text-right">Ações</TableHead>
@@ -123,53 +102,44 @@ function getStatusLabel(status: string): string {
                             </TableHeader>
 
                             <TableBody>
-                                <TableRow v-for="proposal in proposals" :key="proposal.id">
+                                <TableRow v-for="order in orders" :key="order.id">
                                     <TableCell class="font-medium">
-                                        {{ proposal.number }}
+                                        {{ order.number }}
                                     </TableCell>
                                     <TableCell>
-                                        {{ formatDate(proposal.proposal_date) }}
+                                        {{ formatDate(order.order_date) }}
                                     </TableCell>
                                     <TableCell>
-                                        {{ formatDate(proposal.validity_date) }}
+                                        {{ order.supplier.name }}
                                     </TableCell>
                                     <TableCell>
-                                        {{ proposal.client.name }}
+                                        <span class="text-xs text-blue-600">
+                                            {{ order.client_order.number }}
+                                        </span>
                                     </TableCell>
                                     <TableCell class="font-medium">
-                                        {{ formatPrice(proposal.total_amount) }}
+                                        {{ formatPrice(order.total_amount) }}
                                     </TableCell>
                                     <TableCell>
                                         <span :class="[
                                             'rounded-full px-2 py-1 text-xs',
-                                            getStatusClass(proposal.status)
+                                            getStatusClass(order.status)
                                         ]">
-                                            {{ getStatusLabel(proposal.status) }}
+                                            {{ getStatusLabel(order.status) }}
                                         </span>
                                     </TableCell>
                                     <TableCell class="text-right">
                                         <div class="flex justify-end gap-2">
-                                            <Button v-if="proposal.status === 'closed'" size="sm" variant="default"
-                                                @click="convertToOrder(proposal.id)">
-                                                → Encomenda
-                                            </Button>
-
-                                            <Button size="sm" variant="outline" @click="goToEdit(proposal.id)">
-                                                Editar
-                                            </Button>
-                                            <Button size="sm" variant="destructive" @click="destroy(proposal)">
+                                            <Button size="sm" variant="destructive" @click="destroy(order)">
                                                 Apagar
                                             </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
 
-                                <TableRow v-if="proposals.length === 0">
+                                <TableRow v-if="orders.length === 0">
                                     <TableCell colspan="7" class="text-center text-muted-foreground">
-                                        Nenhuma proposta encontrada.
-                                        <Button variant="link" @click="goToCreate" class="ml-2">
-                                            Criar a primeira proposta
-                                        </Button>
+                                        Nenhuma encomenda de fornecedor encontrada.
                                     </TableCell>
                                 </TableRow>
                             </TableBody>

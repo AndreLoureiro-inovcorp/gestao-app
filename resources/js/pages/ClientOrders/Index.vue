@@ -16,12 +16,12 @@ import {
 /* TYPES */
 /* -------------------------------------------------------------------------- */
 
-interface Proposal {
+interface ClientOrder {
     id: number
     number: string
-    proposal_date?: string
-    validity_date: string
+    order_date?: string
     client: { id: number; name: string }
+    proposal?: { id: number; number: string }
     total_amount: number
     status: string
 }
@@ -30,8 +30,8 @@ interface Proposal {
 /* PROPS */
 /* -------------------------------------------------------------------------- */
 
-const { proposals } = defineProps<{
-    proposals: Proposal[]
+const { orders } = defineProps<{
+    orders: ClientOrder[]
 }>()
 
 /* -------------------------------------------------------------------------- */
@@ -39,29 +39,28 @@ const { proposals } = defineProps<{
 /* -------------------------------------------------------------------------- */
 
 function goToCreate() {
-    router.visit('/proposals/create')
+    router.visit('/client-orders/create')
 }
 
 function goToEdit(id: number) {
-    router.visit(`/proposals/${id}/edit`)
+    router.visit(`/client-orders/${id}/edit`)
 }
 
-function destroy(proposal: Proposal) {
-    if (confirm(`Tem certeza que deseja eliminar a proposta ${proposal.number}?`)) {
-        router.delete(`/proposals/${proposal.id}`, {
+function destroy(order: ClientOrder) {
+    if (confirm(`Tem certeza que deseja eliminar a encomenda ${order.number}?`)) {
+        router.delete(`/client-orders/${order.id}`, {
             preserveScroll: true,
         })
     }
 }
 
-function convertToOrder(proposalId: number) {
-    if (confirm('Converter esta proposta em encomenda?')) {
-        router.post(`/proposals/${proposalId}/convert-to-order`, {}, {
+function createSupplierOrders(orderId: number) {
+    if (confirm('Criar encomendas de fornecedor a partir desta encomenda?\n\nSerá criada uma encomenda para cada fornecedor associado aos artigos.')) {
+        router.post(`/client-orders/${orderId}/create-supplier-orders`, {}, {
             onSuccess: () => {
-                alert('Proposta convertida com sucesso!')
-                router.visit('/client-orders')
-            },
-            preserveScroll: true,
+                alert('Encomendas de fornecedor criadas com sucesso!')
+                router.visit('/supplier-orders')
+            }
         })
     }
 }
@@ -93,7 +92,7 @@ function getStatusLabel(status: string): string {
     <AppLayout>
         <template #header>
             <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Propostas
+                Encomendas - Clientes
             </h2>
         </template>
 
@@ -102,9 +101,9 @@ function getStatusLabel(status: string): string {
 
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between">
-                        <CardTitle>Lista de Propostas</CardTitle>
+                        <CardTitle>Lista de Encomendas</CardTitle>
                         <Button @click="goToCreate">
-                            + Nova Proposta
+                            + Nova Encomenda
                         </Button>
                     </CardHeader>
 
@@ -114,8 +113,8 @@ function getStatusLabel(status: string): string {
                                 <TableRow>
                                     <TableHead>Número</TableHead>
                                     <TableHead>Data</TableHead>
-                                    <TableHead>Validade</TableHead>
                                     <TableHead>Cliente</TableHead>
+                                    <TableHead>Proposta</TableHead>
                                     <TableHead>Valor Total</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead class="text-right">Ações</TableHead>
@@ -123,52 +122,58 @@ function getStatusLabel(status: string): string {
                             </TableHeader>
 
                             <TableBody>
-                                <TableRow v-for="proposal in proposals" :key="proposal.id">
+                                <TableRow v-for="order in orders" :key="order.id">
                                     <TableCell class="font-medium">
-                                        {{ proposal.number }}
+                                        {{ order.number }}
                                     </TableCell>
                                     <TableCell>
-                                        {{ formatDate(proposal.proposal_date) }}
+                                        {{ formatDate(order.order_date) }}
                                     </TableCell>
                                     <TableCell>
-                                        {{ formatDate(proposal.validity_date) }}
+                                        {{ order.client.name }}
                                     </TableCell>
                                     <TableCell>
-                                        {{ proposal.client.name }}
+                                        <span v-if="order.proposal" class="text-xs text-blue-600">
+                                            {{ order.proposal.number }}
+                                        </span>
+                                        <span v-else class="text-xs text-gray-400">
+                                            Manual
+                                        </span>
                                     </TableCell>
                                     <TableCell class="font-medium">
-                                        {{ formatPrice(proposal.total_amount) }}
+                                        {{ formatPrice(order.total_amount) }}
                                     </TableCell>
                                     <TableCell>
                                         <span :class="[
                                             'rounded-full px-2 py-1 text-xs',
-                                            getStatusClass(proposal.status)
+                                            getStatusClass(order.status)
                                         ]">
-                                            {{ getStatusLabel(proposal.status) }}
+                                            {{ getStatusLabel(order.status) }}
                                         </span>
                                     </TableCell>
                                     <TableCell class="text-right">
                                         <div class="flex justify-end gap-2">
-                                            <Button v-if="proposal.status === 'closed'" size="sm" variant="default"
-                                                @click="convertToOrder(proposal.id)">
-                                                → Encomenda
+                                            <!-- Criar Encomendas Fornecedor (só se fechado) -->
+                                            <Button v-if="order.status === 'closed'" size="sm" variant="default"
+                                                @click="createSupplierOrders(order.id)">
+                                                → Fornecedores
                                             </Button>
 
-                                            <Button size="sm" variant="outline" @click="goToEdit(proposal.id)">
+                                            <Button size="sm" variant="outline" @click="goToEdit(order.id)">
                                                 Editar
                                             </Button>
-                                            <Button size="sm" variant="destructive" @click="destroy(proposal)">
+                                            <Button size="sm" variant="destructive" @click="destroy(order)">
                                                 Apagar
                                             </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
 
-                                <TableRow v-if="proposals.length === 0">
+                                <TableRow v-if="orders.length === 0">
                                     <TableCell colspan="7" class="text-center text-muted-foreground">
-                                        Nenhuma proposta encontrada.
+                                        Nenhuma encomenda encontrada.
                                         <Button variant="link" @click="goToCreate" class="ml-2">
-                                            Criar a primeira proposta
+                                            Criar a primeira encomenda
                                         </Button>
                                     </TableCell>
                                 </TableRow>

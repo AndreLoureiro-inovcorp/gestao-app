@@ -1,15 +1,17 @@
 <?php
 
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\CompanySettingController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\CountryController;
+use App\Http\Controllers\EntityController;
+use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ClientOrderController;
+use App\Http\Controllers\SupplierOrderController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
-use App\Http\Controllers\EntityController;
-use App\Http\Controllers\ContactController;
-use App\Http\Controllers\ArticleController;
-use App\Http\Controllers\CountryController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\CompanySettingController;
-use App\Http\Controllers\ProposalController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -28,7 +30,16 @@ Route::resource('countries', CountryController::class);
 Route::resource('users', UserController::class);
 Route::resource('proposals', ProposalController::class);
 
+Route::resource('client-orders', ClientOrderController::class);
+Route::post('proposals/{proposal}/convert-to-order', [ClientOrderController::class, 'createFromProposal'])
+    ->name('proposals.convert-to-order');
+Route::post('client-orders/{clientOrder}/create-supplier-orders', [ClientOrderController::class, 'createSupplierOrders'])
+    ->name('client-orders.create-supplier-orders');
+
+Route::resource('supplier-orders', SupplierOrderController::class)
+    ->only(['index', 'show', 'update', 'destroy']);
+
 Route::get('/settings/company', [CompanySettingController::class, 'index'])->name('settings.company');
-    Route::post('/settings/company', [CompanySettingController::class, 'update'])->name('settings.company.update');
+Route::post('/settings/company', [CompanySettingController::class, 'update'])->name('settings.company.update');
 
 require __DIR__.'/settings.php';
