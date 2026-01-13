@@ -25,6 +25,7 @@ import {
     ShoppingCart,
     Settings,
     DollarSign,
+    Calendar,
 } from 'lucide-vue-next'
 import AppLogo from './AppLogo.vue'
 
@@ -53,6 +54,11 @@ const mainNavItems: NavItem[] = [
         title: 'Propostas',
         href: '/proposals',
         icon: FileText,
+    },
+    {
+        title: 'Calendário',
+        href: '/calendar-events',
+        icon: Calendar,
     },
     {
         title: 'Encomendas',

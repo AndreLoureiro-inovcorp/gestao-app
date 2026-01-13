@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\CalendarActionController;
+use App\Http\Controllers\CalendarEventController;
+use App\Http\Controllers\CalendarTypeController;
 use App\Http\Controllers\ClientOrderController;
 use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\ContactController;
@@ -58,6 +61,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/settings/company', [CompanySettingController::class, 'index'])->name('settings.company');
     Route::post('/settings/company', [CompanySettingController::class, 'update'])->name('settings.company.update');
+
+    Route::resource('calendar-events', CalendarEventController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('calendar-types', CalendarTypeController::class)->only(['index', 'store', 'destroy']);
+    Route::resource('calendar-actions', CalendarActionController::class)->only(['index', 'store', 'destroy']);
 });
 
 require __DIR__.'/settings.php';
