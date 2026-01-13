@@ -24,6 +24,7 @@ import {
     FileText,
     ShoppingCart,
     Settings,
+    DollarSign,
 } from 'lucide-vue-next'
 import AppLogo from './AppLogo.vue'
 
@@ -68,6 +69,16 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
+        title: 'Financeiro',
+        icon: DollarSign,
+        items: [
+            {
+                title: 'Faturas Fornecedor',
+                href: '/supplier-invoices',
+            },
+        ],
+    },
+    {
         title: 'Configurações',
         icon: Settings,
         items: [
@@ -94,7 +105,6 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Logs',
                 href: '/activity-logs',
-                icon: FileText,
             },
         ],
     },

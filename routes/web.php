@@ -9,6 +9,7 @@ use App\Http\Controllers\ContactRoleController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\SupplierInvoiceController;
 use App\Http\Controllers\SupplierOrderController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VatRateController;
@@ -46,6 +47,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('client-orders/{clientOrder}/create-supplier-orders', [ClientOrderController::class, 'createSupplierOrders'])->name('client-orders.create-supplier-orders');
 
     Route::resource('supplier-orders', SupplierOrderController::class)->only(['index', 'show', 'update', 'destroy']);
+
+    Route::resource('supplier-invoices', SupplierInvoiceController::class)->except(['edit', 'update']);
+    Route::post('/supplier-invoices/{supplierInvoice}/send-payment-notification', [SupplierInvoiceController::class, 'sendPaymentNotification'])->name('supplier-invoices.send-payment-notification');
 
     Route::get('/settings/company', [CompanySettingController::class, 'index'])->name('settings.company');
     Route::post('/settings/company', [CompanySettingController::class, 'update'])->name('settings.company.update');
