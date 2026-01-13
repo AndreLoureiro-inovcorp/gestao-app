@@ -87,6 +87,11 @@ function getStatusClass(status: string): string {
 function getStatusLabel(status: string): string {
     return status === 'closed' ? 'Fechado' : 'Rascunho'
 }
+
+function downloadPdf(id: number) {
+    window.open(`/proposals/${id}/pdf`, '_blank')
+}
+
 </script>
 
 <template>
@@ -149,9 +154,12 @@ function getStatusLabel(status: string): string {
                                     </TableCell>
                                     <TableCell class="text-right">
                                         <div class="flex justify-end gap-2">
+                                            <Button size="sm" variant="outline" @click="downloadPdf(proposal.id)">
+                                                PDF
+                                            </Button>
                                             <Button v-if="proposal.status === 'closed'" size="sm" variant="default"
                                                 @click="convertToOrder(proposal.id)">
-                                                → Encomenda
+                                                Encomenda
                                             </Button>
 
                                             <Button size="sm" variant="outline" @click="goToEdit(proposal.id)">

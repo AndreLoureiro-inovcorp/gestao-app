@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\ClientOrder;
+use App\Models\CompanySetting;
 use App\Models\Entity;
 use App\Models\Proposal;
 use App\Models\SupplierOrder;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -306,5 +308,24 @@ class ClientOrderController extends Controller
 
         return redirect()->route('supplier-orders.index')
             ->with('success', 'Encomendas de fornecedor criadas com sucesso!');
+    }
+
+    /**
+     * Download client order as PDF
+     */
+    public function downloadPdf(ClientOrder $clientOrder)
+    {
+        $clientOrder->load(['client', 'clientOrderArticles.article.vatRate']);
+
+        $companySetting = CompanySetting::first();
+
+        $pdf = Pdf::loadView('pdfs.client-order', [
+            'order' => $clientOrder,
+            'companySetting' => $companySetting,
+        ]);
+
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download("Encomenda-{$clientOrder->number}.pdf");
     }
 }

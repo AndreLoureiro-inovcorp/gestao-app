@@ -34,8 +34,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('articles', ArticleController::class);
     Route::resource('countries', CountryController::class);
     Route::resource('users', UserController::class);
+
     Route::resource('proposals', ProposalController::class);
+    Route::get('proposals/{proposal}/pdf', [ProposalController::class, 'downloadPdf'])->name('proposals.download-pdf');
+
     Route::resource('client-orders', ClientOrderController::class);
+    Route::get('client-orders/{clientOrder}/pdf', [ClientOrderController::class, 'downloadPdf'])->name('client-orders.download-pdf');
+
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
     Route::resource('contact-roles', ContactRoleController::class)->only(['index', 'store', 'update', 'destroy']);

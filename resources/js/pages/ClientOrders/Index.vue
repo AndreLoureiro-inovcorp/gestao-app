@@ -86,6 +86,10 @@ function getStatusClass(status: string): string {
 function getStatusLabel(status: string): string {
     return status === 'closed' ? 'Fechado' : 'Rascunho'
 }
+
+function downloadPdf(id: number) {
+    window.open(`/client-orders/${id}/pdf`, '_blank')
+}
 </script>
 
 <template>
@@ -103,7 +107,7 @@ function getStatusLabel(status: string): string {
                     <CardHeader class="flex flex-row items-center justify-between">
                         <CardTitle>Lista de Encomendas</CardTitle>
                         <Button @click="goToCreate">
-                            + Nova Encomenda
+                            Nova Encomenda
                         </Button>
                     </CardHeader>
 
@@ -153,10 +157,14 @@ function getStatusLabel(status: string): string {
                                     </TableCell>
                                     <TableCell class="text-right">
                                         <div class="flex justify-end gap-2">
-                                            <!-- Criar Encomendas Fornecedor (só se fechado) -->
+
+                                            <Button size="sm" variant="outline" @click="downloadPdf(order.id)">
+                                                PDF
+                                            </Button>
+
                                             <Button v-if="order.status === 'closed'" size="sm" variant="default"
                                                 @click="createSupplierOrders(order.id)">
-                                                → Fornecedores
+                                                Fornecedores
                                             </Button>
 
                                             <Button size="sm" variant="outline" @click="goToEdit(order.id)">

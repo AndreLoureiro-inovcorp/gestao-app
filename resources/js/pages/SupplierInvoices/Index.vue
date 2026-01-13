@@ -145,7 +145,7 @@ function getStatusLabel(status: string): string {
                     <CardHeader class="flex flex-row items-center justify-between">
                         <CardTitle>Lista de Faturas</CardTitle>
                         <Button @click="goToCreate">
-                            + Nova Fatura
+                            Nova Fatura
                         </Button>
                     </CardHeader>
 

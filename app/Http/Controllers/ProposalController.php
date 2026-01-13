@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
+use App\Models\CompanySetting;
 use App\Models\Entity;
 use App\Models\Proposal;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -78,16 +80,12 @@ class ProposalController extends Controller
         $totalAmount = 0;
 
         foreach ($validated['articles'] as $articleData) {
-            // Buscar artigo para pegar taxa IVA
             $article = Article::with('vatRate')->find($articleData['article_id']);
-
             $subtotal = $articleData['quantity'] * $articleData['unit_price'];
 
-            // Calcular IVA
             $vatRate = $article->vatRate->rate ?? 0;
             $vatAmount = $subtotal * ($vatRate / 100);
 
-            // Total da linha COM IVA
             $lineTotal = $subtotal + $vatAmount;
             $totalAmount += $lineTotal;
 
@@ -100,7 +98,6 @@ class ProposalController extends Controller
             ]);
         }
 
-        // Guardar total COM IVA
         $proposal->update(['total_amount' => $totalAmount]);
 
         return redirect()->route('proposals.index')
@@ -206,5 +203,23 @@ class ProposalController extends Controller
 
         return redirect()->back()
             ->with('success', 'Proposta eliminada com sucesso!');
+    }
+
+    /**
+     * Download proposal as PDF
+     */
+    public function downloadPdf(Proposal $proposal)
+    {
+        $proposal->load(['client', 'proposalArticles.article.vatRate']);
+        $companySetting = CompanySetting::first();
+
+        $pdf = Pdf::loadView('pdfs.proposal', [
+            'proposal' => $proposal,
+            'companySetting' => $companySetting,
+        ]);
+
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download("Proposta-{$proposal->number}.pdf");
     }
 }
