@@ -24,11 +24,18 @@ interface Client {
     name: string
 }
 
+interface VatRate {
+    id: number
+    name: string
+    rate: number
+}
+
 interface Article {
     id: number
     reference: string
     name: string
     price: number
+    vat_rate?: VatRate
 }
 
 interface Supplier {
@@ -42,6 +49,9 @@ interface ClientOrderArticle {
     unit_price: number
     supplier_id: number | null
     cost_price: number | null
+    article?: {
+        vat_rate?: VatRate
+    }
 }
 
 interface ClientOrder {
@@ -60,6 +70,7 @@ interface ArticleLine {
     unit_price: number
     supplier_id: number | null
     cost_price: number | null
+    vat_rate: number
 }
 
 /* -------------------------------------------------------------------------- */
@@ -102,6 +113,7 @@ onMounted(() => {
             unit_price: ca.unit_price,
             supplier_id: ca.supplier_id,
             cost_price: ca.cost_price,
+            vat_rate: ca.article?.vat_rate?.rate || 0,
         }))
     } else {
         articleLines.value = [{
@@ -110,6 +122,7 @@ onMounted(() => {
             unit_price: 0,
             supplier_id: null,
             cost_price: null,
+            vat_rate: 0,
         }]
     }
 })
@@ -118,10 +131,22 @@ onMounted(() => {
 /* COMPUTED */
 /* -------------------------------------------------------------------------- */
 
-const totalAmount = computed(() => {
+const subtotalWithoutVat = computed(() => {
     return articleLines.value.reduce((total, line) => {
         return total + (line.quantity * line.unit_price)
     }, 0)
+})
+
+const totalVat = computed(() => {
+    return articleLines.value.reduce((total, line) => {
+        const subtotal = line.quantity * line.unit_price
+        const vat = subtotal * (line.vat_rate / 100)
+        return total + vat
+    }, 0)
+})
+
+const totalAmount = computed(() => {
+    return subtotalWithoutVat.value + totalVat.value
 })
 
 /* -------------------------------------------------------------------------- */
@@ -135,6 +160,7 @@ function addLine() {
         unit_price: 0,
         supplier_id: null,
         cost_price: null,
+        vat_rate: 0,
     })
 }
 
@@ -149,6 +175,7 @@ function onArticleChange(index: number, articleId: number) {
     if (article) {
         articleLines.value[index].article_id = articleId
         articleLines.value[index].unit_price = article.price
+        articleLines.value[index].vat_rate = article.vat_rate?.rate || 0
     }
 }
 
@@ -282,13 +309,9 @@ function formatPrice(price: number): string {
                                     </div>
 
                                     <div class="col-span-2">
-                                        <Input :value="line.cost_price ?? ''" @input="(e: Event) => {
-                                            const target = e.target as HTMLInputElement;
-                                            line.cost_price = target.value ? Number(target.value) : null;
-                                        }" type="number" step="0.01" min="0" placeholder="Custo (opcional)" />
-                                        <p class="text-xs text-muted-foreground mt-1">
-                                            Uso interno
-                                        </p>
+                                        <Input :model-value="line.cost_price ?? ''"
+                                            @update:model-value="value => line.cost_price = value ? Number(value) : null"
+                                            type="number" step="0.01" min="0" placeholder="Custo (opcional)" />
                                     </div>
 
                                     <div class="col-span-1 flex items-center justify-end">
@@ -298,22 +321,22 @@ function formatPrice(price: number): string {
                                         </Button>
                                     </div>
 
-                                    <div class="col-span-12 text-right text-sm">
-                                        <span class="font-medium text-gray-600">
-                                            Subtotal: {{ formatPrice(getLineSubtotal(line)) }}
-                                        </span>
-                                        <span v-if="line.cost_price" class="ml-4 text-xs text-gray-500">
+                                    <div class="col-span-12 text-right text-sm space-y-1">
+                                        <div v-if="line.vat_rate > 0" class="text-gray-500 text-xs">
+                                            IVA {{ line.vat_rate }}%
+                                        </div>
+                                        <div v-if="line.cost_price" class="text-xs text-gray-500">
                                             (Custo: {{ formatPrice(line.quantity * line.cost_price) }}
-                                            | Margem: {{ formatPrice((line.quantity * line.unit_price) - (line.quantity
-                                                *
-                                                line.cost_price)) }})
-                                        </span>
+                                            | Margem: {{ formatPrice(getLineSubtotal(line) - (line.quantity *
+                                                line.cost_price))
+                                            }})
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div class="rounded-md bg-blue-50 p-4">
                                     <div class="flex items-center justify-between">
-                                        <span class="text-lg font-medium">TOTAL DA ENCOMENDA:</span>
+                                        <span class="text-lg font-medium">TOTAL:</span>
                                         <span class="text-2xl font-bold text-blue-600">
                                             {{ formatPrice(totalAmount) }}
                                         </span>

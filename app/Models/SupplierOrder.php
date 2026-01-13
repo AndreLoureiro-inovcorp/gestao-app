@@ -38,7 +38,11 @@ class SupplierOrder extends Model
         static::creating(function ($order) {
             if (! $order->number) {
                 $year = date('Y');
-                $lastNumber = self::where('number', 'like', "ENCF-{$year}-%")->max('number');
+
+                $lastNumber = self::where('number', 'like', "ENCF-{$year}-%")
+                    ->lockForUpdate()
+                    ->max('number');
+
                 $nextNumber = $lastNumber ? intval(substr($lastNumber, -3)) + 1 : 1;
                 $order->number = sprintf('ENCF-%s-%03d', $year, $nextNumber);
             }

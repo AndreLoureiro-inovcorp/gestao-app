@@ -139,7 +139,6 @@ function formatPrice(price: number): string {
         <div class="py-12">
             <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
 
-                <!-- FORMULÁRIO -->
                 <Card>
                     <CardHeader>
                         <CardTitle>{{ isEditing ? 'Editar' : 'Novo' }} Artigo</CardTitle>
@@ -148,7 +147,6 @@ function formatPrice(price: number): string {
                     <CardContent>
                         <form class="space-y-6" @submit.prevent="submit">
 
-                            <!-- Referência e Nome -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-2">
                                     <Label for="reference">Referência *</Label>
@@ -167,13 +165,11 @@ function formatPrice(price: number): string {
                                 </div>
                             </div>
 
-                            <!-- Descrição -->
                             <div class="space-y-2">
                                 <Label for="description">Descrição</Label>
                                 <Textarea id="description" v-model="form.description" />
                             </div>
 
-                            <!-- Preço e IVA -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-2">
                                     <Label for="price">Preço (€) *</Label>
@@ -200,7 +196,6 @@ function formatPrice(price: number): string {
                                 </div>
                             </div>
 
-                            <!-- Foto (URL por agora) -->
                             <div class="space-y-2">
                                 <Label for="photo">Foto (URL)</Label>
                                 <Input id="photo" v-model="form.photo" type="url" placeholder="https://..." />
@@ -209,13 +204,11 @@ function formatPrice(price: number): string {
                                 </p>
                             </div>
 
-                            <!-- Observações -->
                             <div class="space-y-2">
                                 <Label for="notes">Observações</Label>
                                 <Textarea id="notes" v-model="form.notes" />
                             </div>
 
-                            <!-- Estado -->
                             <div class="space-y-2">
                                 <Label>Estado *</Label>
                                 <Select v-model="form.status">
@@ -227,7 +220,6 @@ function formatPrice(price: number): string {
                                 </Select>
                             </div>
 
-                            <!-- Botões -->
                             <div class="flex gap-2">
                                 <Button type="submit" :disabled="form.processing">
                                     {{ isEditing ? 'Atualizar' : 'Guardar' }}
@@ -241,7 +233,6 @@ function formatPrice(price: number): string {
                     </CardContent>
                 </Card>
 
-                <!-- TABELA -->
                 <Card>
                     <CardHeader>
                         <CardTitle>Lista de Artigos</CardTitle>

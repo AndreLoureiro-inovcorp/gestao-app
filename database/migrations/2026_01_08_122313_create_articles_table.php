@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('name', 200);
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
-            $table->foreignId('vat_rate_id')->nullable()->constrained('vat_rates')->nullOnDelete(); // ← Adicionar nullable
+            $table->foreignId('vat_rate_id')->nullable()->constrained('vat_rates')->nullOnDelete();
             $table->string('photo', 255)->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');

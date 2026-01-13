@@ -14,9 +14,9 @@ import {
 import { dashboard } from '@/routes'
 import type { NavItem } from '@/types'
 import { Link } from '@inertiajs/vue3'
-import { 
-    BookOpen, 
-    Folder, 
+import {
+    BookOpen,
+    Folder,
     LayoutGrid,
     Users,
     Building2,
@@ -74,6 +74,14 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Países',
                 href: '/countries',
+            },
+            {
+                title: 'Funções',
+                href: '/contact-roles',
+            },
+            {
+                title: 'IVA',
+                href: '/vat-rates',
             },
             {
                 title: 'Artigos',

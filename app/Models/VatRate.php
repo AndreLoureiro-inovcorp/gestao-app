@@ -10,6 +10,7 @@ class VatRate extends Model
     use HasFactory;
 
     protected $fillable = [
+        'name',
         'rate',
         'description',
         'is_default',

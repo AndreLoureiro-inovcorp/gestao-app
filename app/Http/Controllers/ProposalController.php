@@ -10,6 +10,9 @@ use Inertia\Inertia;
 
 class ProposalController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
         $proposals = Proposal::with(['client', 'proposalArticles.article'])
@@ -21,13 +24,17 @@ class ProposalController extends Controller
         ]);
     }
 
+    /**
+     * Show the form for creating a new resource.
+     */
     public function create()
     {
         $clients = Entity::whereJsonContains('type', 'client')
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $articles = Article::where('status', 'active')
+        $articles = Article::with('vatRate')
+            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
@@ -42,6 +49,9 @@ class ProposalController extends Controller
         ]);
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -57,7 +67,6 @@ class ProposalController extends Controller
             'articles.*.cost_price' => 'nullable|numeric|min:0',
         ]);
 
-        // Criar proposta
         $proposal = Proposal::create([
             'client_id' => $validated['client_id'],
             'validity_date' => $validated['validity_date'],
@@ -65,12 +74,22 @@ class ProposalController extends Controller
             'status' => $validated['status'],
         ]);
 
-        // Adicionar artigos
+        // Calcular total COM IVA
         $totalAmount = 0;
 
         foreach ($validated['articles'] as $articleData) {
+            // Buscar artigo para pegar taxa IVA
+            $article = Article::with('vatRate')->find($articleData['article_id']);
+
             $subtotal = $articleData['quantity'] * $articleData['unit_price'];
-            $totalAmount += $subtotal;
+
+            // Calcular IVA
+            $vatRate = $article->vatRate->rate ?? 0;
+            $vatAmount = $subtotal * ($vatRate / 100);
+
+            // Total da linha COM IVA
+            $lineTotal = $subtotal + $vatAmount;
+            $totalAmount += $lineTotal;
 
             $proposal->proposalArticles()->create([
                 'article_id' => $articleData['article_id'],
@@ -81,13 +100,16 @@ class ProposalController extends Controller
             ]);
         }
 
-        // Atualizar total
+        // Guardar total COM IVA
         $proposal->update(['total_amount' => $totalAmount]);
 
         return redirect()->route('proposals.index')
             ->with('success', 'Proposta criada com sucesso!');
     }
 
+    /**
+     * Display the specified resource.
+     */
     public function show(Proposal $proposal)
     {
         $proposal->load(['client', 'proposalArticles.article', 'proposalArticles.supplier']);
@@ -97,17 +119,16 @@ class ProposalController extends Controller
         ]);
     }
 
+    /**
+     * Show the form for editing the specified resource.
+     */
     public function edit(Proposal $proposal)
     {
-        $proposal->load(['proposalArticles.article']);
+        $proposal->load(['proposalArticles.article.vatRate']);
 
-        $clients = Entity::whereJsonContains('type', 'client')
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $clients = Entity::whereJsonContains('type', 'client')->orderBy('name')->get(['id', 'name']);
 
-        $articles = Article::where('status', 'active')
-            ->orderBy('name')
-            ->get();
+        $articles = Article::with('vatRate')->where('status', 'active')->orderBy('name')->get();
 
         $suppliers = Entity::whereJsonContains('type', 'supplier')
             ->orderBy('name')
@@ -121,6 +142,9 @@ class ProposalController extends Controller
         ]);
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, Proposal $proposal)
     {
         $validated = $request->validate([
@@ -136,7 +160,6 @@ class ProposalController extends Controller
             'articles.*.cost_price' => 'nullable|numeric|min:0',
         ]);
 
-        // Atualizar proposta
         $proposal->update([
             'client_id' => $validated['client_id'],
             'validity_date' => $validated['validity_date'],
@@ -144,14 +167,20 @@ class ProposalController extends Controller
             'status' => $validated['status'],
         ]);
 
-        // Remover artigos antigos e adicionar novos
         $proposal->proposalArticles()->delete();
 
         $totalAmount = 0;
 
         foreach ($validated['articles'] as $articleData) {
+            $article = Article::with('vatRate')->find($articleData['article_id']);
+
             $subtotal = $articleData['quantity'] * $articleData['unit_price'];
-            $totalAmount += $subtotal;
+
+            $vatRate = $article->vatRate->rate ?? 0;
+            $vatAmount = $subtotal * ($vatRate / 100);
+
+            $lineTotal = $subtotal + $vatAmount;
+            $totalAmount += $lineTotal;
 
             $proposal->proposalArticles()->create([
                 'article_id' => $articleData['article_id'],
@@ -162,13 +191,15 @@ class ProposalController extends Controller
             ]);
         }
 
-        // Atualizar total
         $proposal->update(['total_amount' => $totalAmount]);
 
         return redirect()->route('proposals.index')
             ->with('success', 'Proposta atualizada com sucesso!');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(Proposal $proposal)
     {
         $proposal->delete();

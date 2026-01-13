@@ -13,6 +13,9 @@ use Inertia\Inertia;
 
 class ClientOrderController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
         $orders = ClientOrder::with(['client', 'proposal', 'clientOrderArticles.article'])
@@ -24,13 +27,17 @@ class ClientOrderController extends Controller
         ]);
     }
 
+    /**
+     * Show the form for creating a new resource.
+     */
     public function create()
     {
         $clients = Entity::whereJsonContains('type', 'client')
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $articles = Article::where('status', 'active')
+        $articles = Article::with('vatRate')
+            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
@@ -45,6 +52,9 @@ class ClientOrderController extends Controller
         ]);
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -71,8 +81,15 @@ class ClientOrderController extends Controller
             $totalAmount = 0;
 
             foreach ($validated['articles'] as $articleData) {
+                $article = Article::with('vatRate')->find($articleData['article_id']);
+
                 $subtotal = $articleData['quantity'] * $articleData['unit_price'];
-                $totalAmount += $subtotal;
+
+                $vatRate = $article->vatRate->rate ?? 0;
+                $vatAmount = $subtotal * ($vatRate / 100);
+
+                $lineTotal = $subtotal + $vatAmount;
+                $totalAmount += $lineTotal;
 
                 $order->clientOrderArticles()->create([
                     'article_id' => $articleData['article_id'],
@@ -90,6 +107,9 @@ class ClientOrderController extends Controller
             ->with('success', 'Encomenda criada com sucesso!');
     }
 
+    /**
+     * Display the specified resource.
+     */
     public function show(ClientOrder $clientOrder)
     {
         $clientOrder->load(['client', 'proposal', 'clientOrderArticles.article', 'clientOrderArticles.supplier']);
@@ -99,15 +119,19 @@ class ClientOrderController extends Controller
         ]);
     }
 
+    /**
+     * Show the form for editing the specified resource.
+     */
     public function edit(ClientOrder $clientOrder)
     {
-        $clientOrder->load(['clientOrderArticles.article']);
+        $clientOrder->load(['clientOrderArticles.article.vatRate']);
 
         $clients = Entity::whereJsonContains('type', 'client')
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $articles = Article::where('status', 'active')
+        $articles = Article::with('vatRate')
+            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
@@ -123,6 +147,9 @@ class ClientOrderController extends Controller
         ]);
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, ClientOrder $clientOrder)
     {
         $validated = $request->validate([
@@ -149,8 +176,16 @@ class ClientOrderController extends Controller
             $totalAmount = 0;
 
             foreach ($validated['articles'] as $articleData) {
+
+                $article = Article::with('vatRate')->find($articleData['article_id']);
+
                 $subtotal = $articleData['quantity'] * $articleData['unit_price'];
-                $totalAmount += $subtotal;
+
+                $vatRate = $article->vatRate->rate ?? 0;
+                $vatAmount = $subtotal * ($vatRate / 100);
+
+                $lineTotal = $subtotal + $vatAmount;
+                $totalAmount += $lineTotal;
 
                 $clientOrder->clientOrderArticles()->create([
                     'article_id' => $articleData['article_id'],
@@ -168,6 +203,9 @@ class ClientOrderController extends Controller
             ->with('success', 'Encomenda atualizada com sucesso!');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(ClientOrder $clientOrder)
     {
         $clientOrder->delete();
@@ -226,6 +264,7 @@ class ClientOrderController extends Controller
         }
 
         $articlesBySupplier = $clientOrder->clientOrderArticles()
+            ->with('article.vatRate')
             ->whereNotNull('supplier_id')
             ->get()
             ->groupBy('supplier_id');
@@ -238,7 +277,13 @@ class ClientOrderController extends Controller
         DB::transaction(function () use ($articlesBySupplier, $clientOrder) {
             foreach ($articlesBySupplier as $supplierId => $articles) {
                 $totalAmount = $articles->sum(function ($article) {
-                    return $article->quantity * ($article->cost_price ?? $article->unit_price);
+                    $price = $article->cost_price ?? $article->unit_price;
+                    $subtotal = $article->quantity * $price;
+
+                    $vatRate = $article->article->vatRate->rate ?? 0;
+                    $vatAmount = $subtotal * ($vatRate / 100);
+
+                    return $subtotal + $vatAmount;
                 });
 
                 $supplierOrder = SupplierOrder::create([
