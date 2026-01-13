@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ClientOrderController;
 use App\Http\Controllers\CompanySettingController;
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('users', UserController::class);
     Route::resource('proposals', ProposalController::class);
     Route::resource('client-orders', ClientOrderController::class);
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
     Route::resource('contact-roles', ContactRoleController::class)->only(['index', 'store', 'update', 'destroy']);
 

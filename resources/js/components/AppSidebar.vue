@@ -91,6 +91,11 @@ const mainNavItems: NavItem[] = [
                 title: 'Empresa',
                 href: '/settings/company',
             },
+            {
+                title: 'Logs',
+                href: '/activity-logs',
+                icon: FileText,
+            },
         ],
     },
 ]
