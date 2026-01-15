@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('articles', function (Blueprint $table) {
             $table->id();
-            $table->string('reference', 50)->unique();
+            $table->string('number', 50);
             $table->string('name', 200);
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);

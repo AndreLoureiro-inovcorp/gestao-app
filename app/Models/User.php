@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -21,13 +23,12 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-    'name',
-    'email',
-    'mobile',
-    'permission_group',  
-    'status',       
-    'password',
-];
+        'name',
+        'email',
+        'mobile',
+        'status',
+        'password',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -56,12 +57,60 @@ class User extends Authenticatable
     }
 
     /**
+     * Tenants onde o utilizador é membro
+     */
+    public function tenants(): BelongsToMany
+    {
+        return $this->belongsToMany(Tenant::class)
+            ->withPivot('role', 'joined_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Tenants onde o utilizador é owner
+     */
+    public function ownedTenants(): HasMany
+    {
+        return $this->hasMany(Tenant::class, 'owner_id');
+    }
+
+    /**
+     * Obter tenant ativo na sessão
+     */
+    public function currentTenant(): ?Tenant
+    {
+        $tenantId = session('current_tenant_id');
+
+        if ($tenantId) {
+            return Tenant::find($tenantId);
+        }
+
+        return $this->tenants()->first();
+    }
+
+    /**
+     * Verificar se user pertence a um tenant
+     */
+    public function belongsToTenant(int $tenantId): bool
+    {
+        return $this->tenants()->where('tenant_id', $tenantId)->exists();
+    }
+
+    /**
+     * Verificar se user é owner de um tenant
+     */
+    public function isOwnerOf(Tenant $tenant): bool
+    {
+        return $this->id === $tenant->owner_id;
+    }
+
+    /**
      * Configuração do Activity Log
      */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email'])
+            ->logOnly(['name', 'email', 'mobile', 'status'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

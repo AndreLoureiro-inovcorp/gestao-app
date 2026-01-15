@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('proposals', function (Blueprint $table) {
             $table->id();
-            $table->string('number', 50)->unique();
+            $table->string('number', 50);
             $table->date('proposal_date')->nullable();
             $table->foreignId('client_id')->constrained('entities');
             $table->date('validity_date');

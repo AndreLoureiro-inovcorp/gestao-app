@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('entities', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('number')->unique();
+            $table->unsignedInteger('number');
             $table->json('type');
-            $table->string('tax_number', 20)->unique();
+            $table->string('tax_number', 20);
             $table->string('name', 200);
             $table->text('address')->nullable();
             $table->string('postal_code', 10)->nullable();
