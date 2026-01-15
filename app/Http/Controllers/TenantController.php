@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Tenant;
+use Illuminate\Http\Request;
+
+class TenantController extends Controller
+{
+    public function switch(Tenant $tenant)
+    {
+        session(['current_tenant_id' => $tenant->id]);
+        
+        return redirect()->back();
+    }
+}

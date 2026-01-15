@@ -16,6 +16,8 @@ use App\Http\Controllers\SupplierInvoiceController;
 use App\Http\Controllers\SupplierOrderController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VatRateController;
+use App\Http\Controllers\TenantController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -65,6 +67,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('calendar-events', CalendarEventController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('calendar-types', CalendarTypeController::class)->only(['index', 'store', 'destroy']);
     Route::resource('calendar-actions', CalendarActionController::class)->only(['index', 'store', 'destroy']);
+
+    Route::post('/tenants/switch/{tenant}', [TenantController::class, 'switch'])->name('tenants.switch');
 });
 
 require __DIR__.'/settings.php';

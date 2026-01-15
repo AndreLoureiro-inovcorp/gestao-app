@@ -2,6 +2,7 @@
 import NavFooter from '@/components/NavFooter.vue'
 import NavMain from '@/components/NavMain.vue'
 import NavUser from '@/components/NavUser.vue'
+import TenantSwitcher from '@/components/TenantSwitcher.vue'
 import {
     Sidebar,
     SidebarContent,
@@ -142,6 +143,7 @@ const footerNavItems: NavItem[] = [
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
+            <TenantSwitcher />
         </SidebarHeader>
 
         <SidebarContent>
