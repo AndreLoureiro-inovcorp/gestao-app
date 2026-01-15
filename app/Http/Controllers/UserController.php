@@ -14,19 +14,25 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::latest()->get();
+        $tenant = tenant();
+
+        $users = $tenant->users()
+            ->withPivot('role', 'joined_at')
+            ->latest()
+            ->get()
+            ->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'mobile' => $user->mobile,
+                'status' => $user->status,
+                'role' => $user->pivot->role,
+                'joined_at' => $user->pivot->joined_at,
+            ]);
 
         return Inertia::render('Users/Index', [
             'users' => $users,
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -38,32 +44,24 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'mobile' => 'nullable|string|max:20',
-            'permission_group' => 'nullable|string|max:100',
+            'role' => 'required|in:owner,admin,member',
             'status' => 'required|in:active,inactive',
             'password' => 'required|string|min:8',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
 
-        User::create($validated);
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'mobile' => $validated['mobile'],
+            'status' => $validated['status'],
+            'password' => $validated['password'],
+        ]);
+
+        tenant()->addUser($user, $validated['role']);
 
         return redirect()->back()->with('success', 'Utilizador criado com sucesso!');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(User $user)
-    {
-        return response()->json($user);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(User $user)
-    {
-        //
     }
 
     /**
@@ -71,22 +69,30 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        if (! $user->belongsToTenant(tenant_id())) {
+            abort(403, 'Utilizador não pertence a este tenant.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,'.$user->id,
             'mobile' => 'nullable|string|max:20',
-            'permission_group' => 'nullable|string|max:100',
+            'role' => 'required|in:owner,admin,member',
             'status' => 'required|in:active,inactive',
             'password' => 'nullable|string|min:8',
         ]);
 
-        if (! empty($validated['password'])) {
-            $validated['password'] = Hash::make($validated['password']);
-        } else {
-            unset($validated['password']);
-        }
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'mobile' => $validated['mobile'],
+            'status' => $validated['status'],
+            'password' => ! empty($validated['password']) ? Hash::make($validated['password']) : $user->password,
+        ]);
 
-        $user->update($validated);
+        tenant()->users()->updateExistingPivot($user->id, [
+            'role' => $validated['role'],
+        ]);
 
         return redirect()->back()->with('success', 'Utilizador atualizado com sucesso!');
     }
@@ -96,8 +102,12 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        $user->delete();
+        if (! $user->belongsToTenant(tenant_id())) {
+            abort(403, 'Utilizador não pertence a este tenant.');
+        }
 
-        return redirect()->back()->with('success', 'Utilizador eliminado com sucesso!');
+        tenant()->removeUser($user);
+
+        return redirect()->back()->with('success', 'Utilizador removido do tenant com sucesso!');
     }
 }

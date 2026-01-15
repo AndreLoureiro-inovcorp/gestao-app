@@ -86,6 +86,16 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
+        title: 'Gestão de Acessos',
+        icon: Users,
+        items: [
+            {
+                title: 'Utilizadores',
+                href: '/users',
+            },
+        ],
+    },
+    {
         title: 'Configurações',
         icon: Settings,
         items: [

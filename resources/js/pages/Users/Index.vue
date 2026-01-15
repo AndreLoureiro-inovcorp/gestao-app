@@ -11,6 +11,7 @@ import {
     SelectContent,
     SelectItem,
     SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select'
 import {
     Table,
@@ -20,51 +21,33 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-
-/* -------------------------------------------------------------------------- */
-/* TYPES */
-/* -------------------------------------------------------------------------- */
+import { Badge } from '@/components/ui/badge'
 
 interface User {
     id: number
     name: string
     email: string
     mobile?: string
-    permission_group?: string
+    role: string // ✅ ALTERAR: role em vez de permission_group
     status: string
+    joined_at?: string
 }
-
-/* -------------------------------------------------------------------------- */
-/* PROPS */
-/* -------------------------------------------------------------------------- */
 
 const { users } = defineProps<{
     users: User[]
 }>()
 
-/* -------------------------------------------------------------------------- */
-/* STATE */
-/* -------------------------------------------------------------------------- */
-
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
-
-/* -------------------------------------------------------------------------- */
-/* FORM */
-/* -------------------------------------------------------------------------- */
 
 const form = useForm({
     name: '',
     email: '',
     mobile: '',
-    permission_group: '',
+    role: 'member', // ✅ ALTERAR: role em vez de permission_group
     status: 'active',
     password: '',
 })
-
-/* -------------------------------------------------------------------------- */
-/* ACTIONS */
-/* -------------------------------------------------------------------------- */
 
 function submit() {
     if (isEditing.value && editingId.value !== null) {
@@ -85,7 +68,7 @@ function edit(user: User) {
     form.name = user.name
     form.email = user.email
     form.mobile = user.mobile ?? ''
-    form.permission_group = user.permission_group ?? ''
+    form.role = user.role // ✅ ALTERAR
     form.status = user.status
     form.password = ''
 
@@ -93,7 +76,7 @@ function edit(user: User) {
 }
 
 function destroy(user: User) {
-    if (confirm('Tem certeza que deseja eliminar este utilizador?')) {
+    if (confirm('Tem certeza que deseja remover este utilizador do tenant?')) {
         router.delete(`/users/${user.id}`, {
             preserveScroll: true,
         })
@@ -105,6 +88,27 @@ function clearForm() {
     editingId.value = null
     form.reset()
     form.status = 'active'
+    form.role = 'member'
+}
+
+// ✅ NOVO: Helper para traduzir roles
+function getRoleLabel(role: string): string {
+    const labels: Record<string, string> = {
+        owner: 'Proprietário',
+        admin: 'Administrador',
+        member: 'Membro'
+    }
+    return labels[role] || role
+}
+
+// ✅ NOVO: Helper para cor do badge
+function getRoleBadgeClass(role: string): string {
+    const classes: Record<string, string> = {
+        owner: 'bg-purple-100 text-purple-800',
+        admin: 'bg-blue-100 text-blue-800',
+        member: 'bg-gray-100 text-gray-800'
+    }
+    return classes[role] || 'bg-gray-100 text-gray-800'
 }
 </script>
 
@@ -112,7 +116,7 @@ function clearForm() {
     <AppLayout>
         <template #header>
             <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Gestão de Acessos - Utilizadores
+                Gestão de Utilizadores
             </h2>
         </template>
 
@@ -126,7 +130,6 @@ function clearForm() {
 
                     <CardContent>
                         <form class="space-y-6" @submit.prevent="submit">
-
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-2">
                                     <Label for="name">Nome *</Label>
@@ -144,17 +147,27 @@ function clearForm() {
                                     </p>
                                 </div>
 
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="space-y-2">
-                                        <Label for="mobile">Telemóvel</Label>
-                                        <Input id="mobile" v-model="form.mobile" />
-                                    </div>
+                                <div class="space-y-2">
+                                    <Label for="mobile">Telemóvel</Label>
+                                    <Input id="mobile" v-model="form.mobile" />
+                                </div>
 
-                                    <div class="space-y-2">
-                                        <Label for="permission_group">Grupo de Permissões</Label>
-                                        <Input id="permission_group" v-model="form.permission_group"
-                                            placeholder="Admin, Editor, Viewer..." />
-                                    </div>
+                                <!-- ✅ ALTERAR: Role em vez de permission_group -->
+                                <div class="space-y-2">
+                                    <Label for="role">Papel no Tenant *</Label>
+                                    <Select v-model="form.role">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="owner">Proprietário</SelectItem>
+                                            <SelectItem value="admin">Administrador</SelectItem>
+                                            <SelectItem value="member">Membro</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p v-if="form.errors.role" class="text-sm text-destructive">
+                                        {{ form.errors.role }}
+                                    </p>
                                 </div>
 
                                 <div class="space-y-2">
@@ -169,24 +182,26 @@ function clearForm() {
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label>Estado *</Label>
+                                    <Label for="status">Estado *</Label>
                                     <Select v-model="form.status">
-                                        <SelectTrigger />
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="active">Ativo</SelectItem>
                                             <SelectItem value="inactive">Inativo</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            </div>
 
-                                <div class="flex gap-2">
-                                    <Button type="submit" :disabled="form.processing">
-                                        {{ isEditing ? 'Atualizar' : 'Guardar' }}
-                                    </Button>
-                                    <Button type="button" variant="outline" @click="clearForm">
-                                        Limpar
-                                    </Button>
-                                </div>
+                            <div class="flex gap-2">
+                                <Button type="submit" :disabled="form.processing">
+                                    {{ isEditing ? 'Atualizar' : 'Guardar' }}
+                                </Button>
+                                <Button type="button" variant="outline" @click="clearForm">
+                                    Limpar
+                                </Button>
                             </div>
                         </form>
                     </CardContent>
@@ -194,7 +209,7 @@ function clearForm() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Lista de Utilizadores</CardTitle>
+                        <CardTitle>Utilizadores do Tenant</CardTitle>
                     </CardHeader>
 
                     <CardContent>
@@ -204,7 +219,7 @@ function clearForm() {
                                     <TableHead>Nome</TableHead>
                                     <TableHead>Email</TableHead>
                                     <TableHead>Telemóvel</TableHead>
-                                    <TableHead>Grupo Permissões</TableHead>
+                                    <TableHead>Papel</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead class="text-right">Ações</TableHead>
                                 </TableRow>
@@ -214,23 +229,21 @@ function clearForm() {
                                 <TableRow v-for="user in users" :key="user.id">
                                     <TableCell class="font-medium">{{ user.name }}</TableCell>
                                     <TableCell>{{ user.email }}</TableCell>
-                                    <TableCell>{{ user.mobile }}</TableCell>
+                                    <TableCell>{{ user.mobile || '-' }}</TableCell>
                                     <TableCell>
-                                        <span v-if="user.permission_group"
-                                            class="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
-                                            {{ user.permission_group }}
-                                        </span>
-                                        <span v-else class="text-muted-foreground">-</span>
+                                        <!-- ✅ NOVO: Badge com role -->
+                                        <Badge :class="getRoleBadgeClass(user.role)">
+                                            {{ getRoleLabel(user.role) }}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <span :class="[
-                                            'rounded-full px-2 py-1 text-xs',
+                                        <Badge :class="[
                                             user.status === 'active'
                                                 ? 'bg-green-100 text-green-800'
                                                 : 'bg-gray-100 text-gray-800'
                                         ]">
                                             {{ user.status === 'active' ? 'Ativo' : 'Inativo' }}
-                                        </span>
+                                        </Badge>
                                     </TableCell>
                                     <TableCell class="text-right">
                                         <div class="flex justify-end gap-2">
@@ -238,7 +251,7 @@ function clearForm() {
                                                 Editar
                                             </Button>
                                             <Button size="sm" variant="destructive" @click="destroy(user)">
-                                                Apagar
+                                                Remover
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -246,7 +259,7 @@ function clearForm() {
 
                                 <TableRow v-if="users.length === 0">
                                     <TableCell colspan="6" class="text-center text-muted-foreground">
-                                        Nenhum utilizador encontrado.
+                                        Nenhum utilizador neste tenant.
                                     </TableCell>
                                 </TableRow>
                             </TableBody>
