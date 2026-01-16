@@ -12,12 +12,12 @@ use App\Http\Controllers\ContactRoleController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SupplierInvoiceController;
 use App\Http\Controllers\SupplierOrderController;
+use App\Http\Controllers\TenantController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VatRateController;
-use App\Http\Controllers\TenantController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -69,6 +69,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('calendar-actions', CalendarActionController::class)->only(['index', 'store', 'destroy']);
 
     Route::post('/tenants/switch/{tenant}', [TenantController::class, 'switch'])->name('tenants.switch');
+
+    Route::resource('roles', RoleController::class)->except(['show', 'create']);
 });
 
 require __DIR__.'/settings.php';

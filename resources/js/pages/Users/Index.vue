@@ -23,18 +23,26 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 
+interface Role {
+    id: number
+    name: string
+}
+
 interface User {
     id: number
     name: string
     email: string
     mobile?: string
-    role: string // ✅ ALTERAR: role em vez de permission_group
+    role: string
     status: string
+    spatie_role_id?: number
+    spatie_role_name?: string
     joined_at?: string
 }
 
-const { users } = defineProps<{
+const { users, roles } = defineProps<{
     users: User[]
+    roles: Role[]
 }>()
 
 const isEditing = ref(false)
@@ -44,9 +52,10 @@ const form = useForm({
     name: '',
     email: '',
     mobile: '',
-    role: 'member', // ✅ ALTERAR: role em vez de permission_group
+    role: 'member',
     status: 'active',
     password: '',
+    spatie_role_id: null as number | null,
 })
 
 function submit() {
@@ -68,9 +77,10 @@ function edit(user: User) {
     form.name = user.name
     form.email = user.email
     form.mobile = user.mobile ?? ''
-    form.role = user.role // ✅ ALTERAR
+    form.role = user.role
     form.status = user.status
     form.password = ''
+    form.spatie_role_id = user.spatie_role_id ?? null
 
     window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -89,9 +99,9 @@ function clearForm() {
     form.reset()
     form.status = 'active'
     form.role = 'member'
+    form.spatie_role_id = null
 }
 
-// ✅ NOVO: Helper para traduzir roles
 function getRoleLabel(role: string): string {
     const labels: Record<string, string> = {
         owner: 'Proprietário',
@@ -101,7 +111,6 @@ function getRoleLabel(role: string): string {
     return labels[role] || role
 }
 
-// ✅ NOVO: Helper para cor do badge
 function getRoleBadgeClass(role: string): string {
     const classes: Record<string, string> = {
         owner: 'bg-purple-100 text-purple-800',
@@ -152,7 +161,6 @@ function getRoleBadgeClass(role: string): string {
                                     <Input id="mobile" v-model="form.mobile" />
                                 </div>
 
-                                <!-- ✅ ALTERAR: Role em vez de permission_group -->
                                 <div class="space-y-2">
                                     <Label for="role">Papel no Tenant *</Label>
                                     <Select v-model="form.role">
@@ -167,6 +175,24 @@ function getRoleBadgeClass(role: string): string {
                                     </Select>
                                     <p v-if="form.errors.role" class="text-sm text-destructive">
                                         {{ form.errors.role }}
+                                    </p>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <Label for="spatie_role">Grupo de Permissões</Label>
+                                    <Select v-model="form.spatie_role_id">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione um role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem :value="null">Nenhum</SelectItem>
+                                            <SelectItem v-for="role in roles" :key="role.id" :value="role.id">
+                                                {{ role.name }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p v-if="form.errors.spatie_role_id" class="text-sm text-destructive">
+                                        {{ form.errors.spatie_role_id }}
                                     </p>
                                 </div>
 
@@ -220,6 +246,7 @@ function getRoleBadgeClass(role: string): string {
                                     <TableHead>Email</TableHead>
                                     <TableHead>Telemóvel</TableHead>
                                     <TableHead>Papel</TableHead>
+                                    <TableHead>Permissões</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead class="text-right">Ações</TableHead>
                                 </TableRow>
@@ -231,10 +258,15 @@ function getRoleBadgeClass(role: string): string {
                                     <TableCell>{{ user.email }}</TableCell>
                                     <TableCell>{{ user.mobile || '-' }}</TableCell>
                                     <TableCell>
-                                        <!-- ✅ NOVO: Badge com role -->
                                         <Badge :class="getRoleBadgeClass(user.role)">
                                             {{ getRoleLabel(user.role) }}
                                         </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge v-if="user.spatie_role_name" variant="secondary">
+                                            {{ user.spatie_role_name }}
+                                        </Badge>
+                                        <span v-else class="text-sm text-muted-foreground">-</span>
                                     </TableCell>
                                     <TableCell>
                                         <Badge :class="[
@@ -258,7 +290,7 @@ function getRoleBadgeClass(role: string): string {
                                 </TableRow>
 
                                 <TableRow v-if="users.length === 0">
-                                    <TableCell colspan="6" class="text-center text-muted-foreground">
+                                    <TableCell colspan="7" class="text-center text-muted-foreground">
                                         Nenhum utilizador neste tenant.
                                     </TableCell>
                                 </TableRow>

@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         $tables = [
@@ -31,6 +34,16 @@ return new class extends Migration
                         ->onDelete('cascade');
                 });
             }
+        }
+
+        if (Schema::hasTable('permissions')) {
+            Schema::table('permissions', function (Blueprint $table) {
+                $table->foreignId('tenant_id')
+                    ->nullable()
+                    ->after('id')
+                    ->constrained()
+                    ->onDelete('cascade');
+            });
         }
 
         if (Schema::hasTable('activity_log')) {
@@ -62,6 +75,9 @@ return new class extends Migration
         }
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         $uniqueConstraints = [
@@ -95,6 +111,7 @@ return new class extends Migration
             'supplier_invoices',
             'calendar_events',
             'activity_log',
+            'permissions',
         ];
 
         foreach ($tables as $table) {

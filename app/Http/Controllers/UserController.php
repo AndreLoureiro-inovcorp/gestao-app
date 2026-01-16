@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,22 +17,33 @@ class UserController extends Controller
     {
         $tenant = tenant();
 
+        setPermissionsTeamId($tenant->id);
+
         $users = $tenant->users()
             ->withPivot('role', 'joined_at')
             ->latest()
             ->get()
-            ->map(fn ($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'mobile' => $user->mobile,
-                'status' => $user->status,
-                'role' => $user->pivot->role,
-                'joined_at' => $user->pivot->joined_at,
-            ]);
+            ->map(function ($user) {
+                $userRole = $user->roles()->first();
+
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'mobile' => $user->mobile,
+                    'status' => $user->status,
+                    'role' => $user->pivot->role,
+                    'spatie_role_id' => $userRole?->id,
+                    'spatie_role_name' => $userRole?->name,
+                    'joined_at' => $user->pivot->joined_at,
+                ];
+            });
+
+        $roles = Role::all();
 
         return Inertia::render('Users/Index', [
             'users' => $users,
+            'roles' => $roles,
         ]);
     }
 
@@ -47,19 +59,23 @@ class UserController extends Controller
             'role' => 'required|in:owner,admin,member',
             'status' => 'required|in:active,inactive',
             'password' => 'required|string|min:8',
+            'spatie_role_id' => 'nullable|exists:roles,id',
         ]);
-
-        $validated['password'] = Hash::make($validated['password']);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'mobile' => $validated['mobile'],
             'status' => $validated['status'],
-            'password' => $validated['password'],
+            'password' => Hash::make($validated['password']),
         ]);
 
         tenant()->addUser($user, $validated['role']);
+
+        if (! empty($validated['spatie_role_id'])) {
+            setPermissionsTeamId(tenant_id());
+            $user->assignRole($validated['spatie_role_id']);
+        }
 
         return redirect()->back()->with('success', 'Utilizador criado com sucesso!');
     }
@@ -80,6 +96,7 @@ class UserController extends Controller
             'role' => 'required|in:owner,admin,member',
             'status' => 'required|in:active,inactive',
             'password' => 'nullable|string|min:8',
+            'spatie_role_id' => 'nullable|exists:roles,id',
         ]);
 
         $user->update([
@@ -93,6 +110,14 @@ class UserController extends Controller
         tenant()->users()->updateExistingPivot($user->id, [
             'role' => $validated['role'],
         ]);
+
+        setPermissionsTeamId(tenant_id());
+
+        if (! empty($validated['spatie_role_id'])) {
+            $user->syncRoles([$validated['spatie_role_id']]);
+        } else {
+            $user->syncRoles([]);
+        }
 
         return redirect()->back()->with('success', 'Utilizador atualizado com sucesso!');
     }

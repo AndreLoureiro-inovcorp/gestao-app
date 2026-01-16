@@ -93,6 +93,10 @@ const mainNavItems: NavItem[] = [
                 title: 'Utilizadores',
                 href: '/users',
             },
+            {
+                title: 'Roles e Permissões',
+                href: '/roles',
+            },
         ],
     },
     {
