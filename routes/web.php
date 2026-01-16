@@ -30,47 +30,92 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
+    // Dashboard (todos acedem)
     Route::get('dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    Route::resource('entities', EntityController::class);
-    Route::resource('contacts', ContactController::class);
-    Route::resource('articles', ArticleController::class);
-    Route::resource('countries', CountryController::class);
-    Route::resource('users', UserController::class);
+    // Tenant Switcher (todos acedem)
+    Route::post('/tenants/switch/{tenant}', [TenantController::class, 'switch'])
+        ->name('tenants.switch');
 
-    Route::resource('proposals', ProposalController::class);
-    Route::get('proposals/{proposal}/pdf', [ProposalController::class, 'downloadPdf'])->name('proposals.download-pdf');
+    // Users
+    Route::middleware('permission:users')->group(function () {
+        Route::resource('users', UserController::class);
+    });
 
-    Route::resource('client-orders', ClientOrderController::class);
-    Route::get('client-orders/{clientOrder}/pdf', [ClientOrderController::class, 'downloadPdf'])->name('client-orders.download-pdf');
+    // Roles
+    Route::middleware('permission:roles')->group(function () {
+        Route::resource('roles', RoleController::class)->except(['show', 'create']);
+    });
 
-    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+    // Entities (Clientes/Fornecedores)
+    Route::middleware('permission:entities')->group(function () {
+        Route::resource('entities', EntityController::class);
+    });
 
-    Route::resource('contact-roles', ContactRoleController::class)->only(['index', 'store', 'update', 'destroy']);
+    // Contacts
+    Route::middleware('permission:contacts')->group(function () {
+        Route::resource('contacts', ContactController::class);
+    });
 
-    Route::resource('vat-rates', VatRateController::class)->only(['index', 'store', 'update', 'destroy']);
+    // Proposals
+    Route::middleware('permission:proposals')->group(function () {
+        Route::resource('proposals', ProposalController::class);
+        Route::get('proposals/{proposal}/pdf', [ProposalController::class, 'downloadPdf'])
+            ->name('proposals.download-pdf');
+        Route::post('proposals/{proposal}/convert-to-order', 
+            [ClientOrderController::class, 'createFromProposal'])
+            ->name('proposals.convert-to-order');
+    });
 
-    Route::post('proposals/{proposal}/convert-to-order', [ClientOrderController::class, 'createFromProposal'])->name('proposals.convert-to-order');
+    // Orders
+    Route::middleware('permission:orders')->group(function () {
+        Route::resource('client-orders', ClientOrderController::class);
+        Route::get('client-orders/{clientOrder}/pdf', [ClientOrderController::class, 'downloadPdf'])
+            ->name('client-orders.download-pdf');
+        Route::post('client-orders/{clientOrder}/create-supplier-orders', 
+            [ClientOrderController::class, 'createSupplierOrders'])
+            ->name('client-orders.create-supplier-orders');
+        Route::resource('supplier-orders', SupplierOrderController::class)
+            ->only(['index', 'show', 'update', 'destroy']);
+    });
 
-    Route::post('client-orders/{clientOrder}/create-supplier-orders', [ClientOrderController::class, 'createSupplierOrders'])->name('client-orders.create-supplier-orders');
+    // Invoices
+    Route::middleware('permission:invoices')->group(function () {
+        Route::resource('supplier-invoices', SupplierInvoiceController::class)
+            ->except(['edit', 'update']);
+        Route::post('/supplier-invoices/{supplierInvoice}/send-payment-notification', 
+            [SupplierInvoiceController::class, 'sendPaymentNotification'])
+            ->name('supplier-invoices.send-payment-notification');
+    });
 
-    Route::resource('supplier-orders', SupplierOrderController::class)->only(['index', 'show', 'update', 'destroy']);
+    // Calendar
+    Route::middleware('permission:calendar')->group(function () {
+        Route::resource('calendar-events', CalendarEventController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
+    });
 
-    Route::resource('supplier-invoices', SupplierInvoiceController::class)->except(['edit', 'update']);
-    Route::post('/supplier-invoices/{supplierInvoice}/send-payment-notification', [SupplierInvoiceController::class, 'sendPaymentNotification'])->name('supplier-invoices.send-payment-notification');
+    // Settings (Super Admin apenas ou permission:settings)
+    Route::middleware('permission:settings')->group(function () {
+        Route::resource('contact-roles', ContactRoleController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('vat-rates', VatRateController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('articles', ArticleController::class);
+        Route::resource('countries', CountryController::class);
+        Route::resource('calendar-types', CalendarTypeController::class)
+            ->only(['index', 'store', 'destroy']);
+        Route::resource('calendar-actions', CalendarActionController::class)
+            ->only(['index', 'store', 'destroy']);
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+            ->name('activity-logs.index');
+        Route::get('/settings/company', [CompanySettingController::class, 'index'])
+            ->name('settings.company');
+        Route::post('/settings/company', [CompanySettingController::class, 'update'])
+            ->name('settings.company.update');
+    });
 
-    Route::get('/settings/company', [CompanySettingController::class, 'index'])->name('settings.company');
-    Route::post('/settings/company', [CompanySettingController::class, 'update'])->name('settings.company.update');
-
-    Route::resource('calendar-events', CalendarEventController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::resource('calendar-types', CalendarTypeController::class)->only(['index', 'store', 'destroy']);
-    Route::resource('calendar-actions', CalendarActionController::class)->only(['index', 'store', 'destroy']);
-
-    Route::post('/tenants/switch/{tenant}', [TenantController::class, 'switch'])->name('tenants.switch');
-
-    Route::resource('roles', RoleController::class)->except(['show', 'create']);
 });
 
 require __DIR__.'/settings.php';

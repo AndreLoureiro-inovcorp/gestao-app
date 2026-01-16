@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
 class PermissionSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Seed the application's database.
      */
     public function run(): void
     {
@@ -19,48 +19,74 @@ class PermissionSeeder extends Seeder
         $tenant = Tenant::first();
 
         if (! $tenant) {
-            $this->command->warn('Nenhum tenant encontrado! Crie um tenant primeiro.');
-
             return;
         }
 
         config(['app.current_tenant_id' => $tenant->id]);
+        setPermissionsTeamId($tenant->id);
 
         $permissions = [
-            'users.create',
-            'users.read',
-            'users.update',
-            'users.delete',
-
-            'roles.create',
-            'roles.read',
-            'roles.update',
-            'roles.delete',
-
-            'entities.create',
-            'entities.read',
-            'entities.update',
-            'entities.delete',
-
-            'proposals.create',
-            'proposals.read',
-            'proposals.update',
-            'proposals.delete',
+            'users',
+            'roles',
+            'entities',
+            'contacts',
+            'proposals',
+            'orders',
+            'invoices',
+            'calendar',
+            'settings',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create([
+            Permission::firstOrCreate([
                 'name' => $permission,
                 'guard_name' => 'web',
                 'tenant_id' => $tenant->id,
             ]);
         }
 
-        $superAdmin = Role::create([
+        $superAdmin = Role::firstOrCreate([
             'name' => 'Super Admin',
+            'guard_name' => 'web',
             'tenant_id' => $tenant->id,
         ]);
+        $superAdmin->syncPermissions($permissions);
 
-        $superAdmin->givePermissionTo(Permission::all());
+        $manager = Role::firstOrCreate([
+            'name' => 'Manager',
+            'guard_name' => 'web',
+            'tenant_id' => $tenant->id,
+        ]);
+        $manager->syncPermissions([
+            'entities',
+            'contacts',
+            'proposals',
+            'orders',
+            'invoices',
+            'calendar',
+        ]);
+
+        $editor = Role::firstOrCreate([
+            'name' => 'Editor',
+            'guard_name' => 'web',
+            'tenant_id' => $tenant->id,
+        ]);
+        $editor->syncPermissions([
+            'entities',
+            'contacts',
+            'proposals',
+            'calendar',
+        ]);
+
+        $viewer = Role::firstOrCreate([
+            'name' => 'Viewer',
+            'guard_name' => 'web',
+            'tenant_id' => $tenant->id,
+        ]);
+        $viewer->syncPermissions([
+            'entities',
+            'contacts',
+            'proposals',
+        ]);
     }
 }

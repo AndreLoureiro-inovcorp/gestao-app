@@ -38,6 +38,8 @@ class SetTenantContext
 
         config(['app.current_tenant_id' => $currentTenantId]);
 
+        setPermissionsTeamId($currentTenantId);
+
         return $next($request);
     }
 }
