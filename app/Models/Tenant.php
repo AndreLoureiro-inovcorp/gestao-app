@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -43,6 +45,30 @@ class Tenant extends Model
     }
 
     /**
+     * Subscrição ativa do tenant
+     */
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(TenantSubscription::class)->latest();
+    }
+
+    /**
+     * Todas as subscrições do tenant
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(TenantSubscription::class);
+    }
+
+    /**
+     * Plano atual do tenant
+     */
+    public function currentPlan()
+    {
+        return $this->subscription?->plan;
+    }
+
+    /**
      * Verificar se user é owner
      */
     public function isOwner(User $user): bool
@@ -69,6 +95,78 @@ class Tenant extends Model
     public function removeUser(User $user): void
     {
         $this->users()->detach($user->id);
+    }
+
+    /**
+     * Verificar se tenant está dentro do limite do plano
+     */
+    public function isWithinLimit(string $resource): bool
+    {
+        $plan = $this->currentPlan();
+        
+        if (!$plan || !isset($plan->limits[$resource])) {
+            return true;
+        }
+
+        $limit = $plan->limits[$resource];
+        
+        if ($limit === 'unlimited') {
+            return true;
+        }
+
+        $current = match($resource) {
+            'users' => $this->users()->count(),
+            'proposals' => \App\Models\Proposal::where('tenant_id', $this->id)->count(),
+            default => 0,
+        };
+
+        return $current < $limit;
+    }
+
+    /**
+     * Obter uso atual de um recurso
+     */
+    public function currentUsage(string $resource): int
+    {
+        return match($resource) {
+            'users' => $this->users()->count(),
+            'proposals' => \App\Models\Proposal::where('tenant_id', $this->id)->count(),
+            default => 0,
+        };
+    }
+
+    /**
+     * Obter limite de um recurso
+     */
+    public function getLimit(string $resource)
+    {
+        $plan = $this->currentPlan();
+        
+        if (!$plan || !isset($plan->limits[$resource])) {
+            return 'unlimited';
+        }
+
+        return $plan->limits[$resource];
+    }
+
+    /**
+     * Verificar se está em trial
+     */
+    public function isOnTrial(): bool
+    {
+        return $this->subscription?->isOnTrial() ?? false;
+    }
+
+    /**
+     * Dias restantes de trial
+     */
+    public function trialDaysRemaining(): ?int
+    {
+        if (!$this->isOnTrial()) {
+            return null;
+        }
+
+        return now()->diffInDays($this->subscription->trial_ends_at);
     }
 
     /**
