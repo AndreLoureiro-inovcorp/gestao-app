@@ -38,6 +38,30 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        $tenant = tenant();
+        $subscription = null;
+
+        if ($tenant) {
+            $subscription = [
+                'plan' => [
+                    'name' => $tenant->currentPlan()?->name,
+                    'slug' => $tenant->currentPlan()?->slug,
+                ],
+                'limits' => [
+                    'users' => $tenant->getLimit('users'),
+                    'proposals' => $tenant->getLimit('proposals'),
+                ],
+                'usage' => [
+                    'users' => $tenant->currentUsage('users'),
+                    'proposals' => $tenant->currentUsage('proposals'),
+                ],
+                'trial' => [
+                    'active' => $tenant->isOnTrial(),
+                    'days_remaining' => $tenant->trialDaysRemaining(),
+                ],
+            ];
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -47,9 +71,9 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
-                    'current_tenant' => tenant() ? [
-                        'id' => tenant()->id,
-                        'name' => tenant()->name,
+                    'current_tenant' => $tenant ? [
+                        'id' => $tenant->id,
+                        'name' => $tenant->name,
                     ] : null,
                     'tenants' => $request->user()->tenants->map(fn ($t) => [
                         'id' => $t->id,
@@ -58,6 +82,7 @@ class HandleInertiaRequests extends Middleware
                     ]),
                 ] : null,
             ],
+            'subscription' => $subscription,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
