@@ -2,15 +2,212 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Plan;
+use App\Models\Role;
 use App\Models\Tenant;
+use App\Models\TenantSubscription;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class TenantController extends Controller
 {
-    public function switch(Tenant $tenant)
+    /**
+     * Display a listing of the resource.
+     */
+    public function create()
     {
+        $plans = Plan::where('is_active', true)->get()->map(fn ($plan) => [
+            'id' => $plan->id,
+            'name' => $plan->name,
+            'slug' => $plan->slug,
+            'price' => $plan->price,
+            'limits' => $plan->limits,
+            'features' => $plan->features,
+        ]);
+
+        return Inertia::render('Tenants/Create', [
+            'plans' => $plans,
+        ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:tenants,slug',
+            'plan_id' => 'required|exists:plans,id',
+            'settings.company_name' => 'nullable|string|max:255',
+            'settings.tax_number' => 'nullable|string|max:50',
+            'settings.address' => 'nullable|string|max:500',
+            'settings.postal_code' => 'nullable|string|max:20',
+            'settings.city' => 'nullable|string|max:100',
+        ]);
+
+        $slug = $validated['slug'] ?? Str::slug($validated['name']);
+
+        $originalSlug = $slug;
+        $counter = 1;
+        while (Tenant::where('slug', $slug)->exists()) {
+            $slug = $originalSlug.'-'.$counter;
+            $counter++;
+        }
+
+        $tenant = Tenant::create([
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'owner_id' => auth()->id(),
+            'settings' => $validated['settings'] ?? [],
+            'status' => 'active',
+        ]);
+
+        $tenant->addUser(auth()->user(), 'owner');
+
+        $plan = Plan::find($validated['plan_id']);
+        TenantSubscription::create([
+            'tenant_id' => $tenant->id,
+            'plan_id' => $plan->id,
+            'starts_at' => now(),
+            'trial_ends_at' => now()->addDays(14),
+            'status' => 'active',
+        ]);
+
+        setPermissionsTeamId($tenant->id);
+
+        $this->createDefaultRoles($tenant->id);
+
+        setPermissionsTeamId($tenant->id);
+        auth()->user()->assignRole('Super Admin');
+
         session(['current_tenant_id' => $tenant->id]);
-        
-        return redirect()->back();
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Tenant criado com sucesso! Bem-vindo à '.$tenant->name);
+    }
+
+    /**
+     * Switch to a different tenant.
+     */
+    public function switch(Request $request, Tenant $tenant)
+    {
+        if (! auth()->user()->belongsToTenant($tenant->id)) {
+            return redirect()->back()
+                ->with('error', 'Não tem permissão para aceder a este tenant.');
+        }
+
+        session(['current_tenant_id' => $tenant->id]);
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Mudou para '.$tenant->name);
+    }
+
+    /**
+     * Create default roles for the tenant.
+     */
+    private function createDefaultRoles(int $tenantId): void
+    {
+        setPermissionsTeamId($tenantId);
+
+        // Limpar cache do Spatie
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        $permissions = [
+            'users',
+            'roles',
+            'entities',
+            'contacts',
+            'proposals',
+            'orders',
+            'invoices',
+            'calendar',
+            'settings',
+        ];
+
+        foreach ($permissions as $permissionName) {
+            $exists = \App\Models\Permission::where('name', $permissionName)
+                ->where('tenant_id', $tenantId)
+                ->where('guard_name', 'web')
+                ->exists();
+
+            if (! $exists) {
+                \DB::table('permissions')->insert([
+                    'name' => $permissionName,
+                    'tenant_id' => $tenantId,
+                    'guard_name' => 'web',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        // Recarregar permissões criadas
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        $superAdmin = Role::where('name', 'Super Admin')
+            ->where('tenant_id', $tenantId)
+            ->first();
+
+        if (! $superAdmin) {
+            $superAdmin = \DB::table('roles')->insertGetId([
+                'name' => 'Super Admin',
+                'tenant_id' => $tenantId,
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $superAdmin = Role::find($superAdmin);
+        }
+        $superAdmin->givePermissionTo($permissions);
+
+        $manager = Role::where('name', 'Manager')
+            ->where('tenant_id', $tenantId)
+            ->first();
+
+        if (! $manager) {
+            $managerId = \DB::table('roles')->insertGetId([
+                'name' => 'Manager',
+                'tenant_id' => $tenantId,
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $manager = Role::find($managerId);
+        }
+        $manager->givePermissionTo(['entities', 'contacts', 'proposals', 'orders', 'invoices', 'calendar']);
+
+        $editor = Role::where('name', 'Editor')
+            ->where('tenant_id', $tenantId)
+            ->first();
+
+        if (! $editor) {
+            $editorId = \DB::table('roles')->insertGetId([
+                'name' => 'Editor',
+                'tenant_id' => $tenantId,
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $editor = Role::find($editorId);
+        }
+        $editor->givePermissionTo(['entities', 'contacts', 'proposals', 'calendar']);
+
+        $viewer = Role::where('name', 'Viewer')
+            ->where('tenant_id', $tenantId)
+            ->first();
+
+        if (! $viewer) {
+            $viewerId = \DB::table('roles')->insertGetId([
+                'name' => 'Viewer',
+                'tenant_id' => $tenantId,
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $viewer = Role::find($viewerId);
+        }
+        $viewer->givePermissionTo(['entities', 'contacts', 'proposals']);
     }
 }

@@ -39,7 +39,7 @@ class UserController extends Controller
                 ];
             });
 
-        $roles = Role::all();
+        $roles = Role::where('tenant_id', tenant_id())->get();
 
         return Inertia::render('Users/Index', [
             'users' => $users,
@@ -72,9 +72,16 @@ class UserController extends Controller
 
         tenant()->addUser($user, $validated['role']);
 
-        if (! empty($validated['spatie_role_id'])) {
+        if (!empty($validated['spatie_role_id'])) {
             setPermissionsTeamId(tenant_id());
-            $user->assignRole($validated['spatie_role_id']);
+            
+            $role = Role::where('id', $validated['spatie_role_id'])
+                ->where('tenant_id', tenant_id())
+                ->first();
+            
+            if ($role) {
+                $user->assignRole($role->name);
+            }
         }
 
         return redirect()->back()->with('success', 'Utilizador criado com sucesso!');
@@ -85,7 +92,7 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        if (! $user->belongsToTenant(tenant_id())) {
+        if (!$user->belongsToTenant(tenant_id())) {
             abort(403, 'Utilizador não pertence a este tenant.');
         }
 
@@ -104,7 +111,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'mobile' => $validated['mobile'],
             'status' => $validated['status'],
-            'password' => ! empty($validated['password']) ? Hash::make($validated['password']) : $user->password,
+            'password' => !empty($validated['password']) ? Hash::make($validated['password']) : $user->password,
         ]);
 
         tenant()->users()->updateExistingPivot($user->id, [
@@ -113,10 +120,17 @@ class UserController extends Controller
 
         setPermissionsTeamId(tenant_id());
 
-        if (! empty($validated['spatie_role_id'])) {
-            $user->syncRoles([$validated['spatie_role_id']]);
+        if (!empty($validated['spatie_role_id'])) {
+            $role = Role::where('id', $validated['spatie_role_id'])
+                ->where('tenant_id', tenant_id())
+                ->first();
+            
+            if ($role) {
+                $user->roles()->where('tenant_id', tenant_id())->detach();
+                $user->assignRole($role->name);
+            }
         } else {
-            $user->syncRoles([]);
+            $user->roles()->where('tenant_id', tenant_id())->detach();
         }
 
         return redirect()->back()->with('success', 'Utilizador atualizado com sucesso!');
@@ -127,7 +141,7 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        if (! $user->belongsToTenant(tenant_id())) {
+        if (!$user->belongsToTenant(tenant_id())) {
             abort(403, 'Utilizador não pertence a este tenant.');
         }
 

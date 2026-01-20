@@ -10,9 +10,10 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Building2, ChevronsUpDown, Check } from 'lucide-vue-next'
+import { Building2, ChevronsUpDown, Check, Plus } from 'lucide-vue-next'
 import type { PageProps } from '@inertiajs/core'
 
 interface Tenant {
@@ -41,6 +42,10 @@ function switchTenant(tenantId: number) {
     router.post(`/tenants/switch/${tenantId}`, {}, {
         preserveScroll: true,
     })
+}
+
+function createTenant() {
+    router.visit('/tenants/create')
 }
 </script>
 
@@ -74,6 +79,15 @@ function switchTenant(tenantId: number) {
                             <div class="text-xs text-muted-foreground">{{ tenant.role }}</div>
                         </div>
                         <Check v-if="tenant.id === currentTenant.id" class="size-4" />
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem class="cursor-pointer gap-2" @click="createTenant">
+                        <div class="flex size-6 items-center justify-center rounded-sm border border-dashed">
+                            <Plus class="size-4" />
+                        </div>
+                        <div class="font-medium">Criar Nova Empresa</div>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

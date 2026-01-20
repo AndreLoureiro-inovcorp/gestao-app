@@ -35,7 +35,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    // Tenant Switcher (todos acedem)
+    // Tenant Management
+    Route::get('/tenants/create', [TenantController::class, 'create'])
+        ->name('tenants.create');
+    Route::post('/tenants', [TenantController::class, 'store'])
+        ->name('tenants.store');
     Route::post('/tenants/switch/{tenant}', [TenantController::class, 'switch'])
         ->name('tenants.switch');
 
