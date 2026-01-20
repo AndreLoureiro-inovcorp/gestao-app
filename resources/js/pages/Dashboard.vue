@@ -76,7 +76,7 @@ const planColor = computed(() => {
                             🎁 Trial: {{ subscription.trial.days_remaining }} dias restantes
                         </div>
 
-                        <Button size="sm" variant="outline" class="w-full">
+                        <Button size="sm" variant="outline" class="w-full" @click="$inertia.visit('/plans')">
                             Fazer Upgrade
                         </Button>
                     </CardContent>

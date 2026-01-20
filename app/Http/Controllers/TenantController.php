@@ -105,13 +105,55 @@ class TenantController extends Controller
     }
 
     /**
+     * Show available plans.
+     */
+    public function plans()
+    {
+        $plans = Plan::where('is_active', true)->get();
+        $currentPlan = tenant()->currentPlan();
+
+        return Inertia::render('Plans/Index', [
+            'plans' => $plans,
+            'currentPlan' => $currentPlan,
+        ]);
+    }
+
+    /**
+     * Change tenant plan.
+     */
+    public function changePlan(Request $request, Plan $plan)
+    {
+        $tenant = tenant();
+        $currentSubscription = $tenant->subscription;
+        $oldPlan = $tenant->currentPlan();
+
+        $currentSubscription->update([
+            'plan_id' => $plan->id,
+            'trial_ends_at' => null,
+            'ends_at' => null,
+            'status' => 'active',
+        ]);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($tenant)
+            ->withProperties([
+                'old_plan' => $oldPlan->name,
+                'new_plan' => $plan->name,
+            ])
+            ->log("Mudou plano de {$oldPlan->name} para {$plan->name}");
+
+        return redirect()->route('dashboard')
+            ->with('success', "Plano alterado para {$plan->name} com sucesso!");
+    }
+
+    /**
      * Create default roles for the tenant.
      */
     private function createDefaultRoles(int $tenantId): void
     {
         setPermissionsTeamId($tenantId);
 
-        // Limpar cache do Spatie
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         $permissions = [
@@ -143,7 +185,6 @@ class TenantController extends Controller
             }
         }
 
-        // Recarregar permissões criadas
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         $superAdmin = Role::where('name', 'Super Admin')

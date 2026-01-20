@@ -46,6 +46,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
+    // Plans
+    Route::get('plans', [TenantController::class, 'plans'])->name('plans.index');
+    Route::post('plans/{plan}', [TenantController::class, 'changePlan'])->name('plans.change');
+
     // Roles
     Route::middleware('permission:roles')->group(function () {
         Route::resource('roles', RoleController::class)->except(['show', 'create']);
@@ -94,7 +98,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Settings
-    Route::middleware('permission:settings')->prefix('settings')->group(function () {
+    Route::middleware('permission:settings')->group(function () {
         Route::resource('contact-roles', ContactRoleController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('vat-rates', VatRateController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('articles', ArticleController::class);
@@ -102,8 +106,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('calendar-types', CalendarTypeController::class)->only(['index', 'store', 'destroy']);
         Route::resource('calendar-actions', CalendarActionController::class)->only(['index', 'store', 'destroy']);
         Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
-        Route::get('company', [CompanySettingController::class, 'index'])->name('settings.company');
-        Route::post('company', [CompanySettingController::class, 'update'])->name('settings.company.update');
+        Route::get('settings/company', [CompanySettingController::class, 'index'])->name('settings.company');
+        Route::post('settings/company', [CompanySettingController::class, 'update'])->name('settings.company.update');
     });
 
 });
