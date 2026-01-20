@@ -43,24 +43,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 /* COMPUTED VALUES */
 /* -------------------------------------------------------------------------- */
 
-const usersPercentage = computed(() => {
-    if (!subscription.value) return 0
-    if (subscription.value.limits?.users === 'unlimited') return 0
-
-    return Math.round(
-        (subscription.value.usage.users / subscription.value.limits.users) * 100
-    )
-})
-
-const proposalsPercentage = computed(() => {
-    if (!subscription.value) return 0
-    if (subscription.value.limits?.proposals === 'unlimited') return 0
-
-    return Math.round(
-        (subscription.value.usage.proposals / subscription.value.limits.proposals) * 100
-    )
-})
-
 const planColor = computed(() => {
     const slug = subscription.value?.plan?.slug
     if (slug === 'free') return 'secondary'
