@@ -18,7 +18,7 @@ interface Plan {
     features: string[]
 }
 
-const props = defineProps<{
+defineProps<{
     plans: Plan[]
     currentPlan: Plan | null
 }>()
