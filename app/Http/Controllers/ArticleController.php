@@ -27,20 +27,12 @@ class ArticleController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'reference' => 'required|string|max:50|unique:articles,reference',
+            'number' => 'required|string|max:50|unique:articles,number',
             'name' => 'required|string|max:200',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
@@ -49,6 +41,9 @@ class ArticleController extends Controller
             'notes' => 'nullable|string',
             'status' => 'required|in:active,inactive',
         ]);
+
+        // ✅ ASSOCIA O ARTIGO AO TENANT ATUAL
+        $validated['tenant_id'] = config('app.current_tenant_id');
 
         Article::create($validated);
 
@@ -64,20 +59,12 @@ class ArticleController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Article $article)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Article $article)
     {
         $validated = $request->validate([
-            'reference' => 'required|string|max:50|unique:articles,reference,'.$article->id,
+            'number' => 'required|string|max:50|unique:articles,number,'.$article->id,
             'name' => 'required|string|max:200',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',

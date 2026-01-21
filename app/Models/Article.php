@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use App\Models\Concerns\BelongsToTenant;
 
 class Article extends Model
 {
-    use HasFactory, LogsActivity, BelongsToTenant;
+    use BelongsToTenant, HasFactory, LogsActivity;
 
     protected $fillable = [
-        'reference',
+        'number',
         'name',
         'description',
         'price',
@@ -33,7 +33,7 @@ class Article extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['reference', 'name', 'price', 'status'])
+            ->logOnly(['number', 'name', 'price', 'status'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

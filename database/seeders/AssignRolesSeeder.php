@@ -8,19 +8,22 @@ use Illuminate\Database\Seeder;
 
 class AssignRolesSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        $tenant1 = Tenant::where('slug', 'empresa-1')->first();
-        
-        if (!$tenant1) {
+        $tenant = Tenant::where('slug', 'empresa-demo')->first();
+
+        if (! $tenant) {
             return;
         }
 
-        setPermissionsTeamId($tenant1->id);
+        setPermissionsTeamId($tenant->id);
 
-        $user1 = User::where('email', 'teste@gmail.com')->first();
-        if ($user1) {
-            $user1->assignRole('Super Admin');
+        $user = User::where('email', 'teste@gmail.com')->first();
+        if ($user) {
+            $user->assignRole('Super Admin');
         }
     }
 }

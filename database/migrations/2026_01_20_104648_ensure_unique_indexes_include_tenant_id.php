@@ -88,7 +88,6 @@ return new class extends Migration
      */
     private function handleSqlite(): void
     {
-        // Verificar se índices existem antes de tentar apagar
         $permissionIndexes = DB::select("
             SELECT name FROM sqlite_master 
             WHERE type = 'index' 
@@ -101,21 +100,17 @@ return new class extends Migration
             try {
                 DB::statement("DROP INDEX IF EXISTS {$index->name}");
             } catch (\Exception $e) {
-                // Ignorar se não existir
             }
         }
 
-        // Criar novo índice se não existir
         try {
             DB::statement('
                 CREATE UNIQUE INDEX IF NOT EXISTS permissions_name_guard_tenant_unique 
                 ON permissions (name, guard_name, tenant_id)
             ');
         } catch (\Exception $e) {
-            // Já existe
         }
 
-        // Verificar se índices existem antes de tentar apagar
         $roleIndexes = DB::select("
             SELECT name FROM sqlite_master 
             WHERE type = 'index' 
@@ -128,18 +123,15 @@ return new class extends Migration
             try {
                 DB::statement("DROP INDEX IF EXISTS {$index->name}");
             } catch (\Exception $e) {
-                // Ignorar se não existir
             }
         }
 
-        // Criar novo índice se não existir
         try {
             DB::statement('
                 CREATE UNIQUE INDEX IF NOT EXISTS roles_name_guard_tenant_unique 
                 ON roles (name, guard_name, tenant_id)
             ');
         } catch (\Exception $e) {
-            // Já existe
         }
     }
 
@@ -148,6 +140,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Não reverter para não quebrar dados existentes
+        //
     }
 };

@@ -29,7 +29,7 @@ import {
 
 interface Article {
     id: number
-    reference: string
+    number: string
     name: string
     description?: string
     price: number
@@ -63,7 +63,7 @@ const editingId = ref<number | null>(null)
 /* -------------------------------------------------------------------------- */
 
 const form = useForm({
-    reference: '',
+    number: '',
     name: '',
     description: '',
     price: '' as string | number,
@@ -93,7 +93,7 @@ function edit(article: Article) {
     isEditing.value = true
     editingId.value = article.id
 
-    form.reference = article.reference
+    form.number = article.number
     form.name = article.name
     form.description = article.description ?? ''
     form.price = article.price
@@ -149,10 +149,10 @@ function formatPrice(price: number): string {
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-2">
-                                    <Label for="reference">Referência *</Label>
-                                    <Input id="reference" v-model="form.reference" />
-                                    <p v-if="form.errors.reference" class="text-sm text-destructive">
-                                        {{ form.errors.reference }}
+                                    <Label for="number">Número *</Label>
+                                    <Input id="number" v-model="form.number" />
+                                    <p v-if="form.errors.number" class="text-sm text-destructive">
+                                        {{ form.errors.number }}
                                     </p>
                                 </div>
 
@@ -242,7 +242,7 @@ function formatPrice(price: number): string {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Referência</TableHead>
+                                    <TableHead>Número</TableHead>
                                     <TableHead>Foto</TableHead>
                                     <TableHead>Nome</TableHead>
                                     <TableHead>Descrição</TableHead>
@@ -254,7 +254,7 @@ function formatPrice(price: number): string {
 
                             <TableBody>
                                 <TableRow v-for="article in articles" :key="article.id">
-                                    <TableCell class="font-medium">{{ article.reference }}</TableCell>
+                                    <TableCell class="font-medium">{{ article.number }}</TableCell>
                                     <TableCell>
                                         <img v-if="article.photo" :src="article.photo" :alt="article.name"
                                             class="h-10 w-10 rounded object-cover" />
@@ -268,7 +268,7 @@ function formatPrice(price: number): string {
                                     <TableCell>{{ formatPrice(article.price) }}</TableCell>
                                     <TableCell>
                                         {{ article.vat_rate ? `${article.vat_rate.name} (${article.vat_rate.rate}%)` :
-                                        '-' }}
+                                            '-' }}
                                     </TableCell>
                                     <TableCell class="text-right">
                                         <div class="flex justify-end gap-2">

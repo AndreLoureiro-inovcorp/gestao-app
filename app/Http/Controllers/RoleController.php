@@ -14,7 +14,10 @@ class RoleController extends Controller
      */
     public function index()
     {
-        $roles = Role::with('permissions')
+        setPermissionsTeamId(tenant_id());
+
+        $roles = Role::where('tenant_id', tenant_id())
+            ->with('permissions')
             ->latest()
             ->get()
             ->map(fn ($role) => [
@@ -24,10 +27,12 @@ class RoleController extends Controller
                 'users_count' => $role->users()->count(),
             ]);
 
-        $permissions = Permission::all()->map(fn ($permission) => [
-            'id' => $permission->id,
-            'name' => $permission->name,
-        ]);
+        $permissions = Permission::withoutGlobalScopes()
+            ->get()
+            ->map(fn ($permission) => [
+                'id' => $permission->id,
+                'name' => $permission->name,
+            ]);
 
         return Inertia::render('Roles/Index', [
             'roles' => $roles,
@@ -55,7 +60,9 @@ class RoleController extends Controller
         ]);
 
         if (! empty($validated['permissions'])) {
-            $permissions = Permission::whereIn('id', $validated['permissions'])->get();
+            $permissions = Permission::withoutGlobalScopes()
+                ->whereIn('id', $validated['permissions'])
+                ->get();
             $role->syncPermissions($permissions);
         }
 
@@ -69,9 +76,14 @@ class RoleController extends Controller
     {
         setPermissionsTeamId(tenant_id());
 
+        if ($role->tenant_id !== tenant_id()) {
+            abort(403, 'Não tem permissão para editar este role.');
+        }
+
         $role->load('permissions');
 
-        $roles = Role::with('permissions')
+        $roles = Role::where('tenant_id', tenant_id())
+            ->with('permissions')
             ->latest()
             ->get()
             ->map(fn ($r) => [
@@ -81,10 +93,12 @@ class RoleController extends Controller
                 'users_count' => $r->users()->count(),
             ]);
 
-        $permissions = Permission::all()->map(fn ($permission) => [
-            'id' => $permission->id,
-            'name' => $permission->name,
-        ]);
+        $permissions = Permission::withoutGlobalScopes()
+            ->get()
+            ->map(fn ($permission) => [
+                'id' => $permission->id,
+                'name' => $permission->name,
+            ]);
 
         return Inertia::render('Roles/Index', [
             'role' => [
@@ -102,6 +116,10 @@ class RoleController extends Controller
      */
     public function update(Request $request, Role $role)
     {
+        if ($role->tenant_id !== tenant_id()) {
+            abort(403, 'Não tem permissão para editar este role.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:roles,name,'.$role->id.',id,tenant_id,'.tenant_id(),
             'permissions' => 'nullable|array',
@@ -115,7 +133,9 @@ class RoleController extends Controller
         ]);
 
         if (! empty($validated['permissions'])) {
-            $permissions = Permission::whereIn('id', $validated['permissions'])->get();
+            $permissions = Permission::withoutGlobalScopes()
+                ->whereIn('id', $validated['permissions'])
+                ->get();
             $role->syncPermissions($permissions);
         } else {
             $role->syncPermissions([]);
@@ -129,6 +149,10 @@ class RoleController extends Controller
      */
     public function destroy(Role $role)
     {
+        if ($role->tenant_id !== tenant_id()) {
+            abort(403, 'Não tem permissão para eliminar este role.');
+        }
+
         if ($role->users()->count() > 0) {
             return redirect()->back()->with('error', 'Não é possível eliminar um role com utilizadores associados.');
         }

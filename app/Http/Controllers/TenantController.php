@@ -156,7 +156,7 @@ class TenantController extends Controller
 
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        $permissions = [
+        $permissionNames = [
             'users',
             'roles',
             'entities',
@@ -168,87 +168,56 @@ class TenantController extends Controller
             'settings',
         ];
 
-        foreach ($permissions as $permissionName) {
-            $exists = \App\Models\Permission::where('name', $permissionName)
-                ->where('tenant_id', $tenantId)
-                ->where('guard_name', 'web')
-                ->exists();
+        $permissions = \App\Models\Permission::withoutGlobalScopes()
+            ->whereIn('name', $permissionNames)
+            ->whereNull('tenant_id')
+            ->get();
 
-            if (! $exists) {
-                \DB::table('permissions')->insert([
-                    'name' => $permissionName,
-                    'tenant_id' => $tenantId,
-                    'guard_name' => 'web',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
+        $superAdmin = Role::firstOrCreate([
+            'name' => 'Super Admin',
+            'tenant_id' => $tenantId,
+            'guard_name' => 'web',
+        ]);
+        $superAdmin->syncPermissions($permissions);
 
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        $manager = Role::firstOrCreate([
+            'name' => 'Manager',
+            'tenant_id' => $tenantId,
+            'guard_name' => 'web',
+        ]);
+        $managerPermissions = $permissions->whereIn('name', [
+            'entities',
+            'contacts',
+            'proposals',
+            'orders',
+            'invoices',
+            'calendar',
+        ]);
+        $manager->syncPermissions($managerPermissions);
 
-        $superAdmin = Role::where('name', 'Super Admin')
-            ->where('tenant_id', $tenantId)
-            ->first();
+        $editor = Role::firstOrCreate([
+            'name' => 'Editor',
+            'tenant_id' => $tenantId,
+            'guard_name' => 'web',
+        ]);
+        $editorPermissions = $permissions->whereIn('name', [
+            'entities',
+            'contacts',
+            'proposals',
+            'calendar',
+        ]);
+        $editor->syncPermissions($editorPermissions);
 
-        if (! $superAdmin) {
-            $superAdmin = \DB::table('roles')->insertGetId([
-                'name' => 'Super Admin',
-                'tenant_id' => $tenantId,
-                'guard_name' => 'web',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $superAdmin = Role::find($superAdmin);
-        }
-        $superAdmin->givePermissionTo($permissions);
-
-        $manager = Role::where('name', 'Manager')
-            ->where('tenant_id', $tenantId)
-            ->first();
-
-        if (! $manager) {
-            $managerId = \DB::table('roles')->insertGetId([
-                'name' => 'Manager',
-                'tenant_id' => $tenantId,
-                'guard_name' => 'web',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $manager = Role::find($managerId);
-        }
-        $manager->givePermissionTo(['entities', 'contacts', 'proposals', 'orders', 'invoices', 'calendar']);
-
-        $editor = Role::where('name', 'Editor')
-            ->where('tenant_id', $tenantId)
-            ->first();
-
-        if (! $editor) {
-            $editorId = \DB::table('roles')->insertGetId([
-                'name' => 'Editor',
-                'tenant_id' => $tenantId,
-                'guard_name' => 'web',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $editor = Role::find($editorId);
-        }
-        $editor->givePermissionTo(['entities', 'contacts', 'proposals', 'calendar']);
-
-        $viewer = Role::where('name', 'Viewer')
-            ->where('tenant_id', $tenantId)
-            ->first();
-
-        if (! $viewer) {
-            $viewerId = \DB::table('roles')->insertGetId([
-                'name' => 'Viewer',
-                'tenant_id' => $tenantId,
-                'guard_name' => 'web',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $viewer = Role::find($viewerId);
-        }
-        $viewer->givePermissionTo(['entities', 'contacts', 'proposals']);
+        $viewer = Role::firstOrCreate([
+            'name' => 'Viewer',
+            'tenant_id' => $tenantId,
+            'guard_name' => 'web',
+        ]);
+        $viewerPermissions = $permissions->whereIn('name', [
+            'entities',
+            'contacts',
+            'proposals',
+        ]);
+        $viewer->syncPermissions($viewerPermissions);
     }
 }

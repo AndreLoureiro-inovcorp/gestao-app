@@ -16,7 +16,6 @@ class ActivityLogController extends Controller
         $query = Activity::with(['causer', 'subject'])
             ->latest();
 
-        // Filtros opcionais
         if ($request->filled('causer_id')) {
             $query->where('causer_id', $request->causer_id);
         }
