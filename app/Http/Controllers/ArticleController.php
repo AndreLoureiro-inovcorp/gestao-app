@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\VatRate;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class ArticleController extends Controller
@@ -32,7 +33,14 @@ class ArticleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'number' => 'required|string|max:50|unique:articles,number',
+            'number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('articles', 'number')->where(function ($query) {
+                    return $query->where('tenant_id', config('app.current_tenant_id'));
+                }),
+            ],
             'name' => 'required|string|max:200',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
@@ -42,7 +50,6 @@ class ArticleController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
-        // ✅ ASSOCIA O ARTIGO AO TENANT ATUAL
         $validated['tenant_id'] = config('app.current_tenant_id');
 
         Article::create($validated);
@@ -64,7 +71,16 @@ class ArticleController extends Controller
     public function update(Request $request, Article $article)
     {
         $validated = $request->validate([
-            'number' => 'required|string|max:50|unique:articles,number,'.$article->id,
+            'number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('articles', 'number')
+                    ->where(function ($query) {
+                        return $query->where('tenant_id', config('app.current_tenant_id'));
+                    })
+                    ->ignore($article->id),
+            ],
             'name' => 'required|string|max:200',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
